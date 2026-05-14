@@ -29,7 +29,7 @@ public class feld extends JPanel {
                 
                 cells[r][c] = btn;
  
-                // Nur wenn das Feld klickbar sein soll (Gegnerfeld) hallo hallo
+                // Nur wenn das Feld klickbar sein soll (Gegnerfeld)
                 if (istKlickbar) {
                     final int row = r;
                     final int col = c;

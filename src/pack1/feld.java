@@ -28,8 +28,8 @@ public class feld extends JPanel {
                 btn.setBorder(BorderFactory.createLineBorder(Color.GRAY));
                 
                 cells[r][c] = btn;
-
-                // Nur wenn das Feld klickbar sein soll (Gegnerfeld)
+ 
+                // Nur wenn das Feld klickbar sein soll (Gegnerfeld) hallo hallo
                 if (istKlickbar) {
                     final int row = r;
                     final int col = c;

@@ -1,7 +1,5 @@
 package pack1;
 
-import java.util.ArrayList;
-
 public class logik {
     // 0 = Wasser, 1 = Schiff, 2 = Fehlschuss, 3 = Treffer
     private int[][] playerBoard = new int[10][10];

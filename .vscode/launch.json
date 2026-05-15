@@ -4,9 +4,11 @@
 
     {
       "type": "java",
-      "name": "Launch pack1.main",
+      "name": "Launch Schiffeversenken",
       "request": "launch",
-      "mainClass": "pack1.main"
+      "projectName": "Schiffeversenken",
+      "mainClass": "pack1.Main",
+      "preLaunchTask": "Schiffeversenken - Kompilieren"
     }
   ]
 }

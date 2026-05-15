@@ -2,10 +2,10 @@ package pack1;
 
 import javax.swing.SwingUtilities;
 
-public class main {
+public class Main {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            new GUI(); 
+            new GUI();
         });
     }
 }

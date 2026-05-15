@@ -1,6 +1,10 @@
 package pack1;
 
 import javax.swing.*;
+
+import pack1.BattleshipAI.Koordinaten;
+import pack1.BattleshipAI.ShotResult;
+
 import java.awt.*;
 
 public class GUI extends JFrame {
@@ -8,6 +12,7 @@ public class GUI extends JFrame {
     private feld opponentField;
     private JLabel statusLabel;
     private JButton rotationButton; // Button zum Drehen der Schiffe
+    private BattleshipAI ki;
     
     private logik spiellogik;
 
@@ -62,6 +67,11 @@ public class GUI extends JFrame {
         pack();
         setLocationRelativeTo(null);
         setVisible(true);
+    }
+
+    public GUI(BattleshipAI ki) {
+        this();
+        this.ki = ki;
     }
 
     // Hilfsmethode, um den Hinweistext oben anzupassen
@@ -122,40 +132,40 @@ public class GUI extends JFrame {
             
             if (checkGameEnd()) return; 
             
-            executeAiTurn();
+            executeKiTurn();
         } else if (result == 2) { 
             opponentField.setZellenFarbe(r, c, Color.RED); 
             statusLabel.setText("TREFFER auf Reihe " + (r + 1) + ", Spalte " + (c + 1) + "!");
             
             if (checkGameEnd()) return; 
             
-            executeAiTurn();
+            executeKiTurn();
         } else {
             statusLabel.setText("Hier hast du schon hingeschossen! Wähle ein anderes Feld.");
         }
     }
 
     // Die KI wählt ein zufälliges Feld auf deinem Brett und feuert
-    private void executeAiTurn() {
-        java.util.Random rand = new java.util.Random();
-        boolean gecoost = false;
+    private void executeKiTurn() {
+        // 1. STATT dem alten rand.nextInt fragen wir JETZT deine schlaue KI nach Koordinaten!
+        Koordinaten kiSchuss = ki.getNextShot();
+        int kiRow = kiSchuss.x; // Wichtig: Prüfen, ob bei deinem Partner Row=X oder Row=Y ist!
+        int kiCol = kiSchuss.y;
 
-        // Die KI sucht so lange, bis sie ein noch unbeschossenes Feld findet
-        while (!gecoost) {
-            int aiRow = rand.nextInt(10);
-            int aiCol = rand.nextInt(10);
+        // 2. Er schießt über seine Spiellogik auf den Spieler
+        int result = spiellogik.shootAtPlayer(kiRow, kiCol);
 
-            int result = spiellogik.shootAtPlayer(aiRow, aiCol);
-
-            if (result == 1) { // KI wirft auf Wasser
-                playerField.setZellenFarbe(aiRow, aiCol, Color.LIGHT_GRAY);
-                gecoost = true;
-            } else if (result == 2) { // KI trifft dein Schiff
-                playerField.setZellenFarbe(aiRow, aiCol, Color.RED);
-                gecoost = true;
-            }
+        // 3. WICHTIG: Du musst DEINER KI sagen, was passiert ist, damit sie lernen kann!
+        if (result == 1) { // KI wirft auf Wasser
+            ki.update(ShotResult.WASSER);
+            playerField.setZellenFarbe(kiRow, kiCol, Color.LIGHT_GRAY);
+        } else if (result == 2) { // KI trifft dein Schiff
+            // Falls deine KI auch VERSENKT kennt, müsstet ihr hier prüfen, ob es versenkt war.
+            // Wenn seine Logik nur "Treffer" (2) zurückgibt, schicken wir TREFFER:
+            ki.update(ShotResult.TREFFER);
+            playerField.setZellenFarbe(kiRow, kiCol, Color.RED);
         }
-        
+    
         // Prüfen, ob die KI mit diesem Schuss gewonnen hat
         checkGameEnd();
     }

@@ -1,8 +1,8 @@
 package pack1;
 
 import java.util.Random;
-//import java.util.ArrayList;
-//import java.util.List;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BattleshipAI {
 
@@ -10,11 +10,11 @@ public class BattleshipAI {
     public enum Mode { SEARCH, TARGETING, DESTROYING }
     public enum ShotResult { WASSER, TREFFER, VERSENKT }
     
-    public enum Direction {
+    public enum Richtung{
         NORTH(0, -1), SOUTH(0, 1), EAST(1, 0), WEST(-1, 0);
         public final int dx, dy;
-        Direction(int dx, int dy) { this.dx = dx; this.dy = dy; }
-        public Direction getOpposite() {
+        Richtung(int dx, int dy) { this.dx = dx; this.dy = dy; }
+        public Richtung getOpposite() {
             switch(this) {
                 case NORTH: return SOUTH;
                 case SOUTH: return NORTH;
@@ -25,9 +25,9 @@ public class BattleshipAI {
     }
 
     // --- HILFSKLASSE ---
-    public static class Coordinate {
+    public static class Koordinaten {
         public int x, y;
-        public Coordinate(int x, int y) { this.x = x; this.y = y; }
+        public Koordinaten(int x, int y) { this.x = x; this.y = y; }
     }
 
     // --- VARIABLEN ---
@@ -35,10 +35,10 @@ public class BattleshipAI {
     private char[][] myBoard = new char[10][10];    // Eigene Schiffe
     
     private Mode currentMode = Mode.SEARCH;
-    private Coordinate firstHit = null;
-    private Coordinate lastHit = null;
-    private Coordinate lastShot = null;
-    private Direction currentDirection = null;
+    private Koordinaten firstHit = null;
+    private Koordinaten lastHit = null;
+    private Koordinaten lastShot = null;
+    private Richtung currentDirection = null;
     private Random random = new Random();
 
     // --- KONSTRUKTOR ---
@@ -82,40 +82,58 @@ public class BattleshipAI {
     }
 
     // --- SCHUSS-LOGIK (KI-GEHIRN) ---
-    public Coordinate getNextShot() {
+    public Koordinaten getNextShot() {
         if (currentMode == Mode.SEARCH) lastShot = getSearchShot();
         else if (currentMode == Mode.TARGETING) lastShot = getTargetingShot();
         else lastShot = getDestroyingShot();
         return lastShot;
     }
 
-    private Coordinate getSearchShot() {
-        int x, y;
-        do {
-            x = random.nextInt(10);
-            y = random.nextInt(10);
-        } while ((x + y) % 2 != 0 || enemyBoard[x][y] != '\u0000');
-        return new Coordinate(x, y);
-    }
+    private Koordinaten getSearchShot() {
+    int x, y;
+    // 50% Chance: true = Schachbrett, false = purer Zufall
+    boolean useCheckerboard = random.nextBoolean(); 
 
-    private Coordinate getTargetingShot() {
-        for (Direction d : Direction.values()) {
+    do {
+        x = random.nextInt(10);
+        y = random.nextInt(10);
+
+        if (useCheckerboard) {
+            // Schachbrett-Logik: Nur jedes zweite Feld
+            if ((x + y) % 2 != 0 || enemyBoard[x][y] != '\u0000') {
+                continue;
+             }
+        } else {
+            // Random-Logik: Jedes freie Feld ist okay
+            if (enemyBoard[x][y] != '\u0000') {
+                continue;
+            }
+        }
+
+        // Wenn wir hier landen, haben wir ein gültiges Feld gefunden
+        break; 
+    } while (true);
+
+    return new Koordinaten(x, y);
+}
+    private Koordinaten getTargetingShot() {
+        for (Richtung d : Richtung.values()) {
             int nx = firstHit.x + d.dx;
             int ny = firstHit.y + d.dy;
             if (isValid(nx, ny) && enemyBoard[nx][ny] == '\u0000') {
                 currentDirection = d;
-                return new Coordinate(nx, ny);
+                return new Koordinaten(nx, ny);
             }
         }
         currentMode = Mode.SEARCH;
         return getSearchShot();
     }
 
-    private Coordinate getDestroyingShot() {
+    private Koordinaten getDestroyingShot() {
         int nx = lastHit.x + currentDirection.dx;
         int ny = lastHit.y + currentDirection.dy;
         if (isValid(nx, ny) && enemyBoard[nx][ny] == '\u0000') {
-            return new Coordinate(nx, ny);
+            return new Koordinaten(nx, ny);
         } else {
             currentDirection = currentDirection.getOpposite();
             lastHit = firstHit;

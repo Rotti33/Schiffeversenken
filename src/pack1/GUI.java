@@ -127,14 +127,14 @@ public class GUI extends JFrame {
         int result = spiellogik.shootAtOpponent(r, c);
 
         if (result == 1) { 
-            opponentField.setZellenFarbe(r, c, Color.LIGHT_GRAY); 
+            opponentField.setZellenFarbe(r, c, Color.BLUE); //farbe auf blau für wasser
             statusLabel.setText("Fehlschuss auf Reihe " + (r + 1) + ", Spalte " + (c + 1));
             
             if (checkGameEnd()) return; 
             
             executeKiTurn();
         } else if (result == 2) { 
-            opponentField.setZellenFarbe(r, c, Color.RED); 
+            opponentField.setZellenFarbe(r, c, Color.RED); //farbe für schiff getroffen
             statusLabel.setText("TREFFER auf Reihe " + (r + 1) + ", Spalte " + (c + 1) + "!");
             
             if (checkGameEnd()) return; 
@@ -145,30 +145,34 @@ public class GUI extends JFrame {
         }
     }
 
-    // Die KI wählt ein zufälliges Feld auf deinem Brett und feuert
     private void executeKiTurn() {
-        // 1. STATT dem alten rand.nextInt fragen wir JETZT deine schlaue KI nach Koordinaten!
+    boolean schussGueltig = false;
+
+    // Die KI fragt so lange nach Koordinaten, bis sie ein gültiges (unbeschossenes) Feld trifft
+    while (!schussGueltig) {
         Koordinaten kiSchuss = ki.getNextShot();
-        int kiRow = kiSchuss.x; // Wichtig: Prüfen, ob bei deinem Partner Row=X oder Row=Y ist!
+        int kiRow = kiSchuss.x; 
         int kiCol = kiSchuss.y;
 
-        // 2. Er schießt über seine Spiellogik auf den Spieler
         int result = spiellogik.shootAtPlayer(kiRow, kiCol);
 
-        // 3. WICHTIG: Du musst DEINER KI sagen, was passiert ist, damit sie lernen kann!
-        if (result == 1) { // KI wirft auf Wasser
+        if (result == 1) { // KI trifft Wasser
             ki.update(ShotResult.WASSER);
-            playerField.setZellenFarbe(kiRow, kiCol, Color.LIGHT_GRAY);
-        } else if (result == 2) { // KI trifft dein Schiff
-            // Falls deine KI auch VERSENKT kennt, müsstet ihr hier prüfen, ob es versenkt war.
-            // Wenn seine Logik nur "Treffer" (2) zurückgibt, schicken wir TREFFER:
+            playerField.setZellenFarbe(kiRow, kiCol, Color.BLUE); //Farbe geändert für wasser
+            schussGueltig = true; // Schleife beenden, Zug vorbei
+        } else if (result == 2) { // KI trifft ein Schiff
             ki.update(ShotResult.TREFFER);
-            playerField.setZellenFarbe(kiRow, kiCol, Color.RED);
+            playerField.setZellenFarbe(kiRow, kiCol, Color.RED); //farbe wenn ein schiff getroffen wurde
+            schussGueltig = true; // Schleife beenden, Zug vorbei
         }
-    
-        // Prüfen, ob die KI mit diesem Schuss gewonnen hat
-        checkGameEnd();
+        
+        // Falls result etwas anderes ist (z.B. Feld wurde schon mal beschossen),
+        // bleibt schussGueltig false und die KI fragt im nächsten Schleifendurchlauf nach einem neuen Feld.
     }
+
+    // Prüfen, ob die KI mit diesem Schuss gewonnen hat
+    checkGameEnd();
+}
 
     // Hilfsmethode zur Überprüfung und Anzeige des Spielendes.
     private boolean checkGameEnd() {

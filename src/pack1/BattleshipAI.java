@@ -132,13 +132,26 @@ public class BattleshipAI {
     private Koordinaten getDestroyingShot() {
         int nx = lastHit.x + currentDirection.dx;
         int ny = lastHit.y + currentDirection.dy;
+
+
         if (isValid(nx, ny) && enemyBoard[nx][ny] == '\u0000') {
             return new Koordinaten(nx, ny);
-        } else {
-            currentDirection = currentDirection.getOpposite();
-            lastHit = firstHit;
-            return getNextShot(); 
+        } 
+
+        Richtung gegenseite = currentDirection.getOpposite();
+        int ox = firstHit.x + gegenseite.dx;
+        int oy = firstHit.y + gegenseite.dy;
+
+        if(isValid(ox, oy) && enemyBoard[ox][oy] == '\u0000') {
+            currentDirection = gegenseite;
+            lastHit = firstHit; // Zurück zum ersten Treffer, um in die andere Richtung zu feuern
+            return new Koordinaten(ox, oy);
         }
+        currentMode = Mode.SEARCH;
+        firstHit = null;
+        lastHit = null;
+        currentDirection = null;
+        return getSearchShot();
     }
 
     // --- UPDATE & RÜCKMELDUNG ---
@@ -160,6 +173,21 @@ public class BattleshipAI {
             lastHit = lastShot;
         } else if (result == ShotResult.VERSENKT) {
             enemyBoard[lastShot.x][lastShot.y] = 'T';
+            
+            for(int x = 0; x < 10; x++){
+                for(int y = 0; y< 10; y++){
+                    if(enemyBoard[x][y] == 'T') {
+                        for(int v = -1; v <= 1; v++) {
+                            for(int h = -1; h <= 1; h++) {
+                                int nx = x + v, ny = y + h;
+                                if(isValid(nx, ny) && enemyBoard[nx][ny] == '\u0000') {
+                                    enemyBoard[nx][ny] = 'W'; // Markiere angrenzende Felder als Wasser
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             currentMode = Mode.SEARCH;
             firstHit = null; lastHit = null; currentDirection = null;
         }

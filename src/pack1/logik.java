@@ -76,8 +76,20 @@ public class logik {
         return true;
     }
 
+    public void setOpponentBoard(char[][] generiertesBoard) {
+       for (int x = 0; x < 10; x++) {
+            for (int y = 0; y < 10; y++) {
+                if (generiertesBoard[x][y] == 'S') {
+                    opponentBoard[x][y] = 1; // Schiff
+                } else {
+                    opponentBoard[x][y] = 0; // Wasser
+                } 
+            }
+       }
+    }       
+
     // Hilfsmethode: Platziert die KI-Schiffe vollautomatisch und zufällig
-    private void generiereKISchiffeZufaellig() {
+    /*private void generiereKISchiffeZufaellig() {
         java.util.Random rand = new java.util.Random();
         for (int laenge : schiffsLaengen) {
             boolean erfolgreich = false;
@@ -111,7 +123,7 @@ public class logik {
                 }
             }
         }
-    }
+    }*/
 
     public int shootAtOpponent(int row, int col) {
         if (opponentBoard[row][col] == 0) {

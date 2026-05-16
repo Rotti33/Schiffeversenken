@@ -47,7 +47,7 @@ public class BattleshipAI {
     }
 
     // --- EIGENE SCHIFFE PLATZIEREN ---
-    //schiffe sitzen zu dicht aufeinander -> muss 1 leeres feld um die schiffen geben
+    //muss gemacht werden: schiffe sitzen zu dicht aufeinander -> muss 1 leeres feld um die schiffen geben
     private void platziereAlleSchiffe() {
         int[] flotte = {5, 4, 3, 3, 2}; // Schiffslängen
         for (int laenge : flotte) {
@@ -93,13 +93,16 @@ public class BattleshipAI {
     private Koordinaten getSearchShot() {
     int x, y;
     // 50% Chance: true = Schachbrett, false = purer Zufall
+    //Schwierigkeitsgrad mittel: 50% Schachbrett, 50% Zufall
     //boolean useCheckerboard = random.nextBoolean(); 
 
     //80% Chance: Schachbrett, 20% Chance: purer Zufall
-    boolean useCheckerboard = random.nextInt(100) < 80;
+    //Schwierigkeitsgrad schwer: 80% Schachbrett, 20% Zufall
+    //boolean useCheckerboard = random.nextInt(100) < 80;
 
     //20% Chance: Schachbrett, 80% Chance: purer Zufall
-    //boolean useCheckerboard = random.nextInt(100) < 20;
+    //Schwierigkeitsgrad leicht: 20% Schachbrett, 80% Zufall
+    boolean useCheckerboard = random.nextInt(100) < 20;
 
     do {
         x = random.nextInt(10);
@@ -227,4 +230,5 @@ public class BattleshipAI {
     // --- GETTER FÜR DIE KOLLEGEN ---
     public Mode getCurrentMode() { return currentMode; }
     public char getFeldStatus(int x, int y) { return enemyBoard[x][y]; }
+    public char[][] getMyBoard() { return myBoard; }
 }

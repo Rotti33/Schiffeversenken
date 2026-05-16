@@ -72,6 +72,9 @@ public class GUI extends JFrame {
     public GUI(BattleshipAI ki) {
         this();
         this.ki = ki;
+        
+        char[][] kiBoard = ki.getMyBoard();
+        spiellogik.setOpponentBoard(kiBoard);
     }
 
     // Hilfsmethode, um den Hinweistext oben anzupassen

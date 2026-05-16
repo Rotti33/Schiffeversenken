@@ -17,7 +17,7 @@ public class logik {
     public logik() {
         // Die Arrays starten automatisch komplett mit 0 (Wasser).
         // Wir rufen hier eine Methode auf, die die KI-Schiffe automatisch zufällig versteckt.
-        generiereKISchiffeZufaellig();
+        //generiereKISchiffeZufaellig();
     }
 
     // Ändert die Ausrichtung beim Drücken einer Taste/Button

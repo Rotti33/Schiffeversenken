@@ -40,6 +40,7 @@ public class BattleshipAI {
     private Koordinaten lastShot = null;
     private Richtung currentDirection = null;
     private Random random = new Random();
+    private int schwierigkeitsgrad = 1; // 1=leicht, 2=mittel, 3=schwer
 
     // --- KONSTRUKTOR ---
     public BattleshipAI() {
@@ -92,6 +93,8 @@ public class BattleshipAI {
 
     private Koordinaten getSearchShot() {
     int x, y;
+
+    //--manuell auswählen wie der Schwierigkeitsgrad gewünscht ist
     // 50% Chance: true = Schachbrett, false = purer Zufall
     //Schwierigkeitsgrad mittel: 50% Schachbrett, 50% Zufall
     //boolean useCheckerboard = random.nextBoolean(); 
@@ -103,6 +106,20 @@ public class BattleshipAI {
     //20% Chance: Schachbrett, 80% Chance: purer Zufall
     //Schwierigkeitsgrad leicht: 20% Schachbrett, 80% Zufall
     boolean useCheckerboard = random.nextInt(100) < 20;
+
+
+    //--auskommentiert bis die Schwierigkeitsgrad-Logik in der GUI eingebaut ist
+    /*boolean useCheckerboard = false;
+    //Zufallswert würfelnt, um den Schwierigkeitsgrad zu bestimmen
+    int chance = random.nextInt(100);
+
+    if (schwierigkeitsgrad == 1) { // Leicht: 20% Schachbrett
+        useCheckerboard = chance < 20;
+    } else if (schwierigkeitsgrad == 3) { // schwer: 80% Schachbrett
+        useCheckerboard = chance < 80;
+    } else { // Mittel: 50% Schachbrett
+        useCheckerboard = chance < 50;
+    }*/
 
     do {
         x = random.nextInt(10);
@@ -231,4 +248,5 @@ public class BattleshipAI {
     public Mode getCurrentMode() { return currentMode; }
     public char getFeldStatus(int x, int y) { return enemyBoard[x][y]; }
     public char[][] getMyBoard() { return myBoard; }
+    public void setSchwierigkeitsgrad(int stufe) { this.schwierigkeitsgrad = stufe; }
 }

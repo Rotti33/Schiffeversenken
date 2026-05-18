@@ -16,7 +16,8 @@ public class KI {
                 case NORTH: return SOUTH;
                 case SOUTH: return NORTH;
                 case EAST: return WEST;
-                default: return EAST;
+                case WEST: return EAST;
+                default: return this;
             }
         }
     }
@@ -168,13 +169,13 @@ public class KI {
     //update und rückmeldung
     public void update(ShotResult result) {
         if (result == ShotResult.WASSER) {
-            gegnerBoard[letzterSchuss.x][letzterSchuss.y] = 'W';
+            gegnerBoard[letzterSchuss.x][letzterSchuss.y] = 'W'; //w ist wasser
             if (aktuellerModus == Mode.DESTROYING && aktuelleRichtung != null) {
                 aktuelleRichtung = aktuelleRichtung.getGegenseite();
                 letzterTreffer = ersterTreffer;
             }
         } else if (result == ShotResult.TREFFER) {
-            gegnerBoard[letzterSchuss.x][letzterSchuss.y] = 'T';
+            gegnerBoard[letzterSchuss.x][letzterSchuss.y] = 'T'; //t ist freffer
             if (aktuellerModus == Mode.SEARCH) {
                 aktuellerModus = Mode.TARGETING;
                 ersterTreffer = letzterSchuss;
@@ -189,7 +190,7 @@ public class KI {
                 int nx = letzterSchuss.x;
                 int ny = letzterSchuss.y;
                 while (isValid(nx, ny) && gegnerBoard[nx][ny] == 'T') {
-                    gegnerBoard[nx][ny] = 'V';
+                    gegnerBoard[nx][ny] = 'V'; //getroffene schiff wird v 
                     nx += d[0];
                     ny += d[1];
                 }

@@ -3,6 +3,7 @@ package pack1;
 import java.util.Random;
 
 public class KI {
+    //enums - feste Variablen
     public enum Mode { SEARCH, TARGETING, DESTROYING }
     public enum ShotResult { WASSER, TREFFER, VERSENKT }
 
@@ -34,12 +35,13 @@ public class KI {
     private Koordinaten letzterSchuss = null;
     private Richtung aktuelleRichtung = null;
     private Random random = new Random();
-    private int schwierigkeitsgrad = 1;
+    private int schwierigkeitsgrad = 1; //1 = leicht, 2 = mittel, 3 = schwer, für später vorbereitet
 
     public KI() {
         platziereAlleSchiffe();
     }
 
+    //eigene schiffe plazieren mit 1 block abstand um die schiffe
     private void platziereAlleSchiffe() {
         int[] flotte = {5, 4, 3, 3, 2};
         for (int laenge : flotte) {
@@ -74,6 +76,7 @@ public class KI {
         return true;
     }
 
+    //schuss - logik
     public Koordinaten getNextShot() {
         if (aktuellerModus == Mode.SEARCH) {
             letzterSchuss = getSearchShot();
@@ -87,11 +90,35 @@ public class KI {
 
     private Koordinaten getSearchShot() {
         int x, y;
-        boolean useCheckerboard = random.nextInt(100) < 20;
+    //zurzeit noch manuell auswählen wie der Schwierigkeitsgrad gewünscht ist
+
+    //Schwierigkeitsgrad mittel: 50% Schachbrett, 50% Zufall
+    //boolean useCheckerboard = random.nextBoolean(); 
+
+    //Schwierigkeitsgrad schwer: 80% Schachbrett, 20% Zufall
+    //boolean useCheckerboard = random.nextInt(100) < 80;
+
+    //Schwierigkeitsgrad leicht: 20% Schachbrett, 80% Zufall
+    boolean useCheckerboard = random.nextInt(100) < 20;
+
+
+    //auskommentiert bis die Schwierigkeitsgrad in der GUI eingebaut ist
+    /*boolean useCheckerboard = false;
+    //Zufallswert würfelnt, um den Schwierigkeitsgrad zu bestimmen
+    int chance = random.nextInt(100);
+
+    if (schwierigkeitsgrad == 1) { // Leicht: 20% Schachbrett
+        useCheckerboard = chance < 20;
+    } else if (schwierigkeitsgrad == 3) { // schwer: 80% Schachbrett
+        useCheckerboard = chance < 80;
+    } else { // Mittel: 50% Schachbrett
+        useCheckerboard = chance < 50;
+    }*/
 
         do {
             x = random.nextInt(10);
             y = random.nextInt(10);
+
             if (gegnerBoard[x][y] != '\u0000') continue;
             if (useCheckerboard && ((x + y) % 2 != 0)) continue;
             break;
@@ -127,7 +154,7 @@ public class KI {
 
         if (isValid(ox, oy) && gegnerBoard[ox][oy] == '\u0000') {
             aktuelleRichtung = gegenseite;
-            letzterSchuss = ersterTreffer;
+            letzterSchuss = ersterTreffer; //zurück zum ersten treffer -> andere richtung probieren
             return new Koordinaten(ox, oy);
         }
 
@@ -138,6 +165,7 @@ public class KI {
         return getSearchShot();
     }
 
+    //update und rückmeldung
     public void update(ShotResult result) {
         if (result == ShotResult.WASSER) {
             gegnerBoard[letzterSchuss.x][letzterSchuss.y] = 'W';
@@ -174,7 +202,7 @@ public class KI {
                                 int nx = x + v;
                                 int ny = y + h;
                                 if (isValid(nx, ny) && gegnerBoard[nx][ny] == '\u0000') {
-                                    gegnerBoard[nx][ny] = 'W';
+                                    gegnerBoard[nx][ny] = 'W'; //angrenzende felder sind wasser
                                 }
                             }
                         }
@@ -214,16 +242,15 @@ public class KI {
         return x >= 0 && x < 10 && y >= 0 && y < 10;
     }
 
+    //get und set
     public void setFeldBeschossen(int x, int y) {
         if (isValid(x, y) && gegnerBoard[x][y] == '\u0000') {
             gegnerBoard[x][y] = 'W';
         }
     }
-
     public char[][] getMyBoard() {
         return meinBoard;
     }
-
     public void setSchwierigkeitsgrad(int stufe) {
         this.schwierigkeitsgrad = stufe;
     }

@@ -6,19 +6,19 @@ import pack1.KI.ShotResult;
 import java.awt.*;
 
 public class GUI extends JFrame {
-    // Visuelle Komponenten für die beiden 10x10 Spielfelder
+    //Visuelle Komponenten für die beiden 10x10 Spielfelder
     private Feld spielerFeld;
     private Feld gegnerFeld;
     
-    // UI-Elemente für Texte und Steuerung
+    //UI-Elemente für Texte und Steuerung
     private JLabel statusLabel;
-    private JButton drehButton; // Button zum Wechseln der Platzierungsrichtung
+    private JButton drehButton; //Button zum Wechseln der Platzierungsrichtung
     
-    // Referenzen für die KI und die zentrale Spiellogik
+    //Referenzen für die KI und die zentrale Spiellogik
     private KI ki;
     private Logik spiellogik;
 
-    // Standardkonstruktor: Initialisiert das Anwendungsfenster und die Logik
+    //Standardkonstruktor: Initialisiert das Anwendungsfenster und die Logik
     public GUI() {
         spiellogik = new Logik();
 
@@ -26,40 +26,39 @@ public class GUI extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
 
-        // 1. Statuszeile im oberen Bereich (Norden) vorbereiten
+        //Statuszeile im oberen Bereich (Norden) vorbereiten
         statusLabel = new JLabel("", SwingConstants.CENTER);
         statusLabel.setFont(new Font("Arial", Font.BOLD, 14));
         add(statusLabel, BorderLayout.NORTH);
-        aktualisiereStatusText(); // Setzt den Text für das erste zu platzierende Schiff
+        aktualisiereStatusText(); //Setzt den Text für das erste zu platzierende Schiff
 
-        // 2. Container-Panel für das Nebeneinanderplatzieren der zwei Spielfelder
+        //Container-Panel für das Nebeneinanderplatzieren der zwei Spielfelder
         JPanel feldContainer = new JPanel(new GridLayout(1, 2, 30, 0));
         feldContainer.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Das eigene Spielfeld: Reagiert in der Setzphase auf Mausklicks zum Platzieren
+        //Das eigene Spielfeld: Reagiert in der Setzphase auf Mausklicks zum Platzieren
         spielerFeld = new Feld("Dein Spielfeld", true, e -> {
             Point koordinaten = (Point) e.getSource();
             schiffsPlatzierung(koordinaten.x, koordinaten.y);
         });
         
-        // Das gegnerische Spielfeld: Nimmt Klicks an und führt in der Kampfphase Angriffe aus
+        //Das gegnerische Spielfeld: Nimmt Klicks an und führt in der Kampfphase Angriffe aus
         gegnerFeld = new Feld("Gegnerisches Feld (KI)", true, e -> {
             Point koordinaten = (Point) e.getSource();
-            verarbeiteAngriff(koordinaten.x, koordinaten.y); // Umbenannt, um Verwechslung mit KI-Klasse zu vermeiden
+            verarbeiteAngriff(koordinaten.x, koordinaten.y);
         });
 
-        // Felder dem Container hinzufügen und mittig im Fenster platzieren
+        //Felder dem Container hinzufügen und mittig im Fenster platzieren
         feldContainer.add(spielerFeld);
         feldContainer.add(gegnerFeld);
         add(feldContainer, BorderLayout.CENTER);
 
-        // 3. Steuerungs-Panel im unteren Bereich (Süden) für die Ausrichtung der Schiffe
+        //Steuerungs-Panel im unteren Bereich (Süden) für die Ausrichtung der Schiffe
         JPanel suedPanel = new JPanel(new FlowLayout());
         drehButton = new JButton("Ausrichtung: HORIZONTAL");
         drehButton.setFont(new Font("Arial", Font.PLAIN, 12));
         drehButton.addActionListener(e -> {
-            spiellogik.toggleRichtung(); // Schaltet die Logik zwischen true/false um
-            // BEHOBEN: Text ändert sich jetzt dynamisch für den Spieler!
+            spiellogik.toggleRichtung(); //Schaltet die Logik zwischen true/false um
             if (spiellogik.getIstHorizontal()) {
                 drehButton.setText("Ausrichtung: HORIZONTAL");
             } else {
@@ -69,23 +68,23 @@ public class GUI extends JFrame {
         suedPanel.add(drehButton);
         add(suedPanel, BorderLayout.SOUTH);
 
-        // Fenstergröße automatisch anpassen und mittig auf dem Bildschirm platzieren
+        //Fenstergröße automatisch anpassen und mittig auf dem Bildschirm platzieren
         pack();
         setLocationRelativeTo(null);
         setVisible(true);
     }
 
-    // Erweiterter Konstruktor: Wird von der Main aufgerufen, um die KI-Instanz zu übergeben
+    //Erweiterter Konstruktor: Wird von der Main aufgerufen um die KI-Instanz zu übergeben
     public GUI(KI ki) {
-        this(); // Ruft zuerst den parameterlosen Standardkonstruktor darüber auf
+        this(); //Ruft zuerst den parameterlosen Standardkonstruktor darüber auf
         this.ki = ki;
         
-        // Liest das verdeckte Schiffs-Board der KI aus und übergibt es an die Logik
+        //Liest das verdeckte Schiffs Feld der KI aus und übergibt es an die Logik
         char[][] kiBoard = ki.getMyBoard();
         spiellogik.setGegnerFeld(kiBoard);
     }
 
-    // Hilfsmethode, um den Hinweistext in der oberen Statuszeile je nach Spielphase anzupassen
+    //Hilfsmethode um den Hinweistext in der oberen Statuszeile je nach Spielphase anzupassen
     private void aktualisiereStatusText() {
         if (!spiellogik.alleSchiffePlatziert()) {
             statusLabel.setText("Platziere ein Schiff der Länge " + spiellogik.getAktuelleSchiffsLaenge());
@@ -94,14 +93,14 @@ public class GUI extends JFrame {
         }
     }
 
-    // Verarbeitet Mausklicks auf dem eigenen Feld während der Schiffs-Aufstellung
+    //Verarbeitet Mausklicks auf dem eigenen Feld während der Schiffs Aufstellung
     private void schiffsPlatzierung(int r, int c) {
         int laenge = spiellogik.getAktuelleSchiffsLaenge();
         boolean horizontal = spiellogik.getIstHorizontal();
 
-        // Versucht das Schiff über die Logik-Klasse regelkonform auf dem Feld einzutragen
+        //Versucht das Schiff über die Logik-Klasse regelkonform auf dem Feld einzutragen
         if (spiellogik.platziereSpielerSchiff(r, c)) {
-            // Wenn erfolgreich, werden die betroffenen Zellen auf dem GUI-Spielfeld grau gefärbt
+            //Wenn erfolgreich werden die betroffenen Zellen auf dem GUI-Spielfeld grau gefärbt
             for (int i = 0; i < laenge; i++) {
                 if (horizontal) {
                     spielerFeld.setZellenFarbe(r, c + i, Color.GRAY);
@@ -110,101 +109,98 @@ public class GUI extends JFrame {
                 }
             }
 
-            // Prüfen, ob nach dieser Platzierung die Setzphase abgeschlossen ist
+            //Prüfen, ob nach dieser Platzierung die Setzphase abgeschlossen ist
             if (spiellogik.alleSchiffePlatziert()) {
                 starteKampfphase();
             } else {
                 aktualisiereStatusText();
             }
         } else {
-            // Fehlermeldung anzeigen, wenn das Schiff das Raster verlässt oder blockiert wird
+            //Fehlermeldung anzeigen wenn das Schiff das Feld verlässt oder blockiert wird
             JOptionPane.showMessageDialog(this, "Schiff passt nicht rein", "Fehler", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    // Steuerung wird von setzen auf Kampf geswitcht
+    //Steuerung wird von setzen auf Kampf geswitcht
     private void starteKampfphase() {
         aktualisiereStatusText();
-        drehButton.setEnabled(false); // Deaktiviert den Ausrichtungs-Button, da er nicht mehr benötigt wird
+        drehButton.setEnabled(false); //Deaktiviert den Ausrichtungs-Button, da er nicht mehr benötigt wird
     }
 
-    // Verarbeitet Angriffe des Spielers auf das gegnerische Spielfeld
+    //Verarbeitet Angriffe des Spielers auf das gegnerische Spielfeld
     private void verarbeiteAngriff(int r, int c) {
-        // Klicks ignorieren, solange der Spieler seine eigenen Schiffe noch nicht fertig platziert hat
+        //Klicks ignorieren solange der Spieler seine eigenen Schiffe noch nicht fertig platziert hat
         if (!spiellogik.alleSchiffePlatziert()) return;
         
-        // Sofort abbrechen, wenn das Spiel bereits durch einen Sieger beendet wurde
+        //Sofort abbrechen wenn das Spiel bereits durch einen Sieger beendet wurde
         if (spiellogik.sieg() || spiellogik.kisieg()) return;
 
-        // Schuss in der Logik auswerten lassen
+        //Schuss in der Logik auswerten lassen
         int ergebnis = spiellogik.schussAufGegner(r, c);
 
-        if (ergebnis == 1) { // Fehlschuss (Wasser getroffen)
-            gegnerFeld.setZellenFarbe(r, c, Color.BLUE); // Zelle wird blau gefärbt
+        if (ergebnis == 1) { //Fehlschuss (Wasser getroffen)
+            gegnerFeld.setZellenFarbe(r, c, Color.BLUE); //Zelle wird blau gefärbt
             statusLabel.setText("Fehlschuss auf Reihe " + (r + 1) + ", Spalte " + (c + 1));
             
-            if (spielende()) return; // Spielende prüfen, bevor die KI zieht
+            if (spielende()) return; //Spielende prüfen bevor die KI zieht
             
             kiZugAus();
-        } else if (ergebnis == 2) { // Treffer
-            gegnerFeld.setZellenFarbe(r, c, Color.RED); // Zelle wird rot gefärbt
+        } else if (ergebnis == 2) { //Treffer
+            gegnerFeld.setZellenFarbe(r, c, Color.RED); //Zelle wird rot gefärbt
             statusLabel.setText("TREFFER auf Reihe " + (r + 1) + ", Spalte " + (c + 1) + "!");
             
-            spielende(); // Prüfen, ob der Spieler mit diesem Treffer gewonnen hat
-            // Hinweis: Nach einem Treffer darf der Spieler meistens erneut schießen, 
-            // daher wird 'kiZugAus()' hier bewusst nicht aufgerufen.
+            spielende(); // Prüfen, ob der Spieler mit diesem Treffer gewonnen hat 
         } else {
-            // Wenn ergebnis == 0, wurde dieses Feld bereits vorher beschossen
+            //Wenn ergebnis == 0, wurde dieses Feld bereits vorher beschossen
             statusLabel.setText("Feld schon gewählt");
         }
     }
 
-    // Berechnet und visualisiert den Gegenangriff der künstlichen Intelligenz
+    //Berechnet und visualisiert den Gegenangriff der KI
     private void kiZugAus() {
         boolean schussGueltig = false;
 
-        // Die KI fragt in einer Schleife so lange nach neuen Koordinaten, bis sie ein unbeschossenes Feld trifft
+        //Die KI fragt in einer Schleife so lange nach neuen Koordinaten bis sie ein unbeschossenes Feld trifft
         while (!schussGueltig) {
             Koordinaten kiSchuss = ki.getNextShot();
             int kiReihe = kiSchuss.x; 
             int kiSpalte = kiSchuss.y;
 
-            // Führt den Schuss auf das Spielerfeld in der Logik aus
+            //Führt den Schuss auf das Spielerfeld in der Logik aus
             int ergebnis = spiellogik.schussAufSpieler(kiReihe, kiSpalte);
 
-            if (ergebnis == 1) { // KI hat Wasser getroffen
-                ki.update(ShotResult.WASSER); // KI über Fehlschuss informieren
-                spielerFeld.setZellenFarbe(kiReihe, kiSpalte, Color.BLUE); // Spielerfeld-Zelle wird blau
-                schussGueltig = true; // Zug gültig abgeschlossen, Schleife bricht ab
-            } else if (ergebnis == 2) { // KI hat ein Spielerschiff getroffen
-                // BEHOBEN: Wir prüfen, ob das Spiel vorbei ist, um ggf. VERSENKT zu melden
+            if (ergebnis == 1) { //KI hat Wasser getroffen
+                ki.update(ShotResult.WASSER); //KI über Fehlschuss informieren
+                spielerFeld.setZellenFarbe(kiReihe, kiSpalte, Color.BLUE); //Spielerfeld-Zelle wird blau
+                schussGueltig = true; //Zug gültig abgeschlossen Schleife bricht ab
+            } else if (ergebnis == 2) { //KI hat ein Spielerschiff getroffen
+                //Prüfen ob das Spiel vorbei ist
                 if (spiellogik.kisieg()) {
                     ki.update(ShotResult.VERSENKT);
                 } else {
                     ki.update(ShotResult.TREFFER);
                 }
-                spielerFeld.setZellenFarbe(kiReihe, kiSpalte, Color.RED); // Spielerfeld-Zelle wird rot
-                schussGueltig = true; // Zug gültig abgeschlossen, Schleife bricht ab
+                spielerFeld.setZellenFarbe(kiReihe, kiSpalte, Color.RED); //Spielerfeld-Zelle wird rot
+                schussGueltig = true; //Zug gültig abgeschlossen Schleife bricht ab
             } else {
-                // BEHOBEN: Falls das Feld schon mal beschossen wurde (ergebnis == 0),
-                // sagen wir der KI bescheid, damit sie beim nächsten Schleifendurchlauf ein anderes Feld wählt.
+                //KI sucht nicht benutztes Feld
                 ki.setFeldBeschossen(kiReihe, kiSpalte);
             }
         }
 
-        // BEHOBEN: Nach dem KI-Zug wird hier nun ordnungsgemäß geprüft, ob die KI gewonnen hat
+        //Prüfung ob KI gewonnen hat
         spielende();
     }
 
-    // Hilfsmethode zur Überprüfung und Anzeige des Spielendes
+    //Hilfsmethode zur Überprüfung und Anzeige des Spielendes
     private boolean spielende() {
         if (spiellogik.sieg()) {
-            statusLabel.setText("SIEG! Du hast alle gegnerischen Schiffe versenkt!");
+            statusLabel.setText("Gewonnen!");
             JOptionPane.showMessageDialog(this, "Herzlichen Glückwunsch! Du hast gewonnen!", "Spiel vorbei", JOptionPane.INFORMATION_MESSAGE);
             return true;
         } else if (spiellogik.kisieg()) {
-            statusLabel.setText("NIEDERLAGE! Die KI hat deine Flotte zerstört.");
-            JOptionPane.showMessageDialog(this, "Schade! Die KI war schneller.", "Spiel vorbei", JOptionPane.WARNING_MESSAGE);
+            statusLabel.setText("NIEDERLAGE!");
+            JOptionPane.showMessageDialog(this, "Die KI hat gewonen", "Spiel vorbei", JOptionPane.WARNING_MESSAGE);
             return true;
         }
         return false;

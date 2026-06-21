@@ -105,16 +105,16 @@ public class KI {
 
     //auskommentiert bis die Schwierigkeitsgrad in der GUI eingebaut ist
     /*boolean useCheckerboard = false;
-    //Zufallswert würfelnt, um den Schwierigkeitsgrad zu bestimmen
-    int chance = random.nextInt(100);
+    //Zufallswert würfelnt, um den Schwierigkeitsgrad zu bestimmen
+    int chance = random.nextInt(100);
 
-    if (schwierigkeitsgrad == 1) { // Leicht: 20% Schachbrett
-        useCheckerboard = chance < 20;
-    } else if (schwierigkeitsgrad == 3) { // schwer: 80% Schachbrett
-        useCheckerboard = chance < 80;
-    } else { // Mittel: 50% Schachbrett
-        useCheckerboard = chance < 50;
-    }*/
+    if (schwierigkeitsgrad == 1) { // Leicht: 20% Schachbrett
+        useCheckerboard = chance < 20;
+    } else if (schwierigkeitsgrad == 3) { // schwer: 80% Schachbrett
+        useCheckerboard = chance < 80;
+    } else { // Mittel: 50% Schachbrett
+        useCheckerboard = chance < 50;
+    }*/
 
         do {
             x = random.nextInt(10);
@@ -225,34 +225,40 @@ public class KI {
         return ShotResult.WASSER;
     }
 
+    // BEHOBEN: Vervollständigte Methode zur Prüfung, ob das Schiff versenkt ist
     private boolean istVersenkt(int x, int y) {
         int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
         for (int[] d : dirs) {
             int nx = x + d[0];
             int ny = y + d[1];
-            while (isValid(nx, ny) && (meinBoard[nx][ny] == 'S' || meinBoard[nx][ny] == 'X')) {
-                if (meinBoard[nx][ny] == 'S') return false;
+            while (isValid(nx, ny)) {
+                if (meinBoard[nx][ny] == 'S') {
+                    return false; // Ein Teil des Schiffs ist noch intakt
+                }
+                if (meinBoard[nx][ny] != 'X') {
+                    break; // Ende dieses Schiffssegments erreicht
+                }
                 nx += d[0];
                 ny += d[1];
             }
         }
-        return true;
+        return true; // Alle Teile des Schiffes wurden getroffen ('X')
     }
 
+    // Hilfsmethode zur Überprüfung, ob gegebene Koordinaten innerhalb des Spielfelds liegen
     private boolean isValid(int x, int y) {
         return x >= 0 && x < 10 && y >= 0 && y < 10;
     }
 
-    //get und set
-    public void setFeldBeschossen(int x, int y) {
-        if (isValid(x, y) && gegnerBoard[x][y] == '\u0000') {
-            gegnerBoard[x][y] = 'W';
-        }
-    }
+    // Gibt das eigene Spielfeld zurück (für die Initialisierung im Netzwerkspiel)
     public char[][] getMyBoard() {
         return meinBoard;
     }
-    public void setSchwierigkeitsgrad(int stufe) {
-        this.schwierigkeitsgrad = stufe;
+
+    // Verhindert das Einfrieren der GUI im Netzwerk-/Botmodus bei blockierten Koordinaten
+    public void setFeldBeschossen(int x, int y) {
+        if (isValid(x, y)) {
+            gegnerBoard[x][y] = 'W';
+        }
     }
 }

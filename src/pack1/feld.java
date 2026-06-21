@@ -54,4 +54,14 @@ public class Feld extends JPanel {
     public void setZellenFarbe(int reihe, int spalte, Color farbe) {
         Zellen[reihe][spalte].setBackground(farbe);
     }
+
+    // NEU hinzugefügt für Netzwerk & Bot-Modus:
+    // Erlaubt es, die Interaktion mit dem Feld dynamisch ein- und auszuschalten
+    public void setAktiv(boolean aktiv) {
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 10; j++) {
+                Zellen[i][j].setEnabled(aktiv);
+            }
+        }
+    }
 }

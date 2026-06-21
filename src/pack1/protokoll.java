@@ -16,32 +16,32 @@ public abstract class protokoll {
     }
 
     /**
-     * Sendet eine formatierte Nachricht an den Spielpartner[cite: 1, 2].
+     * Sendet eine formatierte Nachricht an den Spielpartner.
      */
     public void sendeNachricht(String befehl, Object... parameter) {
         StringBuilder sb = new StringBuilder(befehl.toLowerCase());
         for (Object param : parameter) {
-            sb.append(" ").append(param); // Trennung durch Leerzeichen [cite: 2]
+            sb.append(" ").append(param); // Trennung durch Leerzeichen
         }
-        netzwerkWriter.println(sb.toString()); // Nachricht endet mit Zeilentrenner [cite: 2]
+        netzwerkWriter.println(sb.toString()); // Nachricht endet mit Zeilentrenner
         netzwerkWriter.flush();
     }
 
     /**
-     * Liest die nächste Nachricht und verarbeitet sie im Case-System[cite: 6].
+     * Liest die nächste Nachricht und verarbeitet sie im Case-System.
      * @return true, wenn die Verbindung offen bleibt; false bei Beendigung.
      */
     public boolean verarbeiteNaechsteNachricht() throws IOException {
-        String zeile = netzwerkReader.readLine(); // Liest Nachricht bequem ein [cite: 6]
+        String zeile = netzwerkReader.readLine(); // Liest Nachricht bequem ein
         
-        // Wenn die Verbindung geschlossen wurde, liefert readLine null [cite: 35]
+        // Wenn die Verbindung geschlossen wurde, liefert readLine null
         if (zeile == null) {
             verarbeiteVerbindungGeschlossen();
             return false;
         }
 
-        // Nachricht in Bestandteile zerlegen [cite: 6]
-        String[] teile = zeile.trim().split(" "); // Trennung mittels split [cite: 6]
+        // Nachricht in Bestandteile zerlegen
+        String[] teile = zeile.trim().split(" "); // Trennung mittels split
         if (teile.length == 0 || teile[0].isEmpty()) {
             return true; 
         }
@@ -100,14 +100,14 @@ public abstract class protokoll {
 
             case SAVE:
                 if (teile.length == 2) {
-                    long speicherId = Long.parseLong(teile[1]); // Wertebereich long [cite: 3, 73]
+                    long speicherId = Long.parseLong(teile[1]); // Wertebereich long
                     verarbeiteSpeichern(speicherId);
                 }
                 break;
 
             case LOAD:
                 if (teile.length == 2) {
-                    long ladeId = Long.parseLong(teile[1]); // Wertebereich long [cite: 3, 73]
+                    long ladeId = Long.parseLong(teile[1]); // Wertebereich long
                     verarbeiteLaden(ladeId);
                 }
                 break;

@@ -127,7 +127,17 @@ public class Logik {
         return spielerfeld[row][col];
     }
 
+    // NEU hinzugefügt für zusätzliche Netzwerk- & Bot-Abfragen:
+    public int getGegnerFeldZustand(int row, int col) {
+        return gegnerfeld[row][col];
+    }
+
     public void registriereNetzwerkTreffer() {
         spielerTreffer++;
+    }
+
+    // NEU hinzugefügt für KI-Erfassung im Netzwerk/Bot-Modus:
+    public void registriereNetzwerkKiTreffer() {
+        kiTreffer++;
     }
 }

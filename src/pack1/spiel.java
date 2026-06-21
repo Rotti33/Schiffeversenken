@@ -50,6 +50,8 @@ public class spiel {
                     @Override
                     protected void verarbeiteReady() {
                         System.out.println("Gegner ist spielbereit (ready).");
+                        // Schaltet das gegnerische Spielfeld aktiv, falls wir am Zug sind
+                        SwingUtilities.invokeLater(() -> gui.schalteGegnerFeldAktiv(spiel.this.ichBinAmZug));
                     }
 
                     @Override
@@ -78,6 +80,8 @@ public class spiel {
                         if (ergebnis == 0) {
                             protokollHandler.sendeNachricht("pass");
                             spiel.this.ichBinAmZug = true;
+                            // Feld für uns wieder aktivieren, da der Gegner vorbei geschossen hat
+                            SwingUtilities.invokeLater(() -> gui.schalteGegnerFeldAktiv(true));
                             if (spiel.this.modusKiGegenGegner) {
                                 spiel.this.triggerKiZug();
                             }
@@ -98,6 +102,8 @@ public class spiel {
 
                         if (ergebnis > 0) {
                             spiel.this.ichBinAmZug = true;
+                            // Bei einem Treffer bleiben wir am Zug, Feld aktiv lassen
+                            SwingUtilities.invokeLater(() -> gui.schalteGegnerFeldAktiv(true));
                             if (spiel.this.modusKiGegenGegner) {
                                 spiel.this.triggerKiZug();
                             }
@@ -107,6 +113,8 @@ public class spiel {
                     @Override
                     protected void verarbeitePass() {
                         spiel.this.ichBinAmZug = true; 
+                        // Wir erhalten den Zug per 'pass' zurück, Feld wieder freigeben
+                        SwingUtilities.invokeLater(() -> gui.schalteGegnerFeldAktiv(true));
                         if (spiel.this.modusKiGegenGegner) {
                             spiel.this.triggerKiZug();
                         }
@@ -157,6 +165,8 @@ public class spiel {
         if (ichBinAmZug && !modusKiGegenGegner) {
             protokollHandler.sendeNachricht("shot", r + 1, c + 1); 
             ichBinAmZug = false;
+            // Nach unserem Schuss das Feld direkt sperren, bis die Antwort oder der 'pass' kommt
+            SwingUtilities.invokeLater(() -> gui.schalteGegnerFeldAktiv(false));
         }
     }
 
@@ -170,6 +180,12 @@ public class spiel {
         long id = System.currentTimeMillis();
         if (protokollHandler != null) {
             protokollHandler.sendeNachricht("save", id);
+        }
+    }
+
+    public void sendeReadySignal() {
+        if (protokollHandler != null) {
+            protokollHandler.sendeNachricht("ready");
         }
     }
 }

@@ -2,6 +2,8 @@ package pack1;
 
 import javax.swing.*;
 import java.awt.*;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 public class Startmenu extends JFrame {
 
@@ -39,16 +41,65 @@ public class Startmenu extends JFrame {
             this.dispose();    // Schließt das Menüfenster sauber im Hintergrund
         });
 
-        // 2. Bot vs. Bot
+        // 2. Bot vs. Bot (BEHOBEN: Startet jetzt die automatische KI-Schleife)
         btnBotVsBot.addActionListener(e -> {
-            // Hier starten Sie später die Logik, bei der zwei KIs gegeneinander spielen
-            JOptionPane.showMessageDialog(this, "Modus Bot vs. Bot folgt noch!");
+            KI bot1 = new KI();
+            KI bot2 = new KI();
+            GUI gui = new GUI(); // Leeres GUI-Fenster ohne Spieler-KI erstellen
+            this.dispose();
+            
+            // Schiffe visuell auf das Feld bringen, damit man sie sieht
+            char[][] board1 = bot1.getMyBoard();
+            for (int r = 0; r < 10; r++) {
+                for (int c = 0; c < 10; c++) {
+                    if (board1[r][c] == 'S') gui.pruefeGegnerSchuss(r, c); // Trick zum Aufdecken
+                }
+            }
+            // Felder zurücksetzen auf Startfarbe
+            gui.starteBotSchleife(bot1, bot2);
         });
 
-        // 3. Spieler vs. Spieler (Ihr neues Netzwerksystem)
+        // 3. Spieler vs. Spieler (BEHOBEN: Baut jetzt echte Server/Client Sockets auf)
         btnSpielerVsSpieler.addActionListener(e -> {
-            // Hier rufen Sie die Logik/GUI auf, die Sie für das Netzwerk gecodet haben
-            JOptionPane.showMessageDialog(this, "Verbindung zum Netzwerk wird aufgebaut...");
+            String[] optionen = {"Server erstellen (Host)", "Mit Server verbinden (Client)"};
+            int wahl = JOptionPane.showOptionDialog(this, "Möchtest du ein Spiel hosten oder beitreten?", "Netzwerkmodus",
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, optionen, optionen);
+
+            if (wahl == 0) { // Server / Host
+                new Thread(() -> {
+                    try {
+                        System.out.println("Server gestartet, warte auf Client auf Port 5000...");
+                        ServerSocket serverSocket = new ServerSocket(5000);
+                        Socket socket = serverSocket.accept();
+                        
+                        GUI gui = new GUI();
+                        spiel netzwerkSpiel = new spiel(gui, null);
+                        netzwerkSpiel.starteNetzwerkVerbindung(socket, true); // true = Server darf anfangen
+                        this.dispose();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(this, "Fehler beim Erstellen des Servers!");
+                    }
+                }).start();
+            } else if (wahl == 1) { // Client / Beitreten
+                String ip = JOptionPane.showInputDialog(this, "Gib die IP-Adresse des Servers ein:", "127.0.0.1");
+                if (ip != null && !ip.isEmpty()) {
+                    new Thread(() -> {
+                        try {
+                            System.out.println("Verbinde mit Server " + ip + " auf Port 5000...");
+                            Socket socket = new Socket(ip, 5000);
+                            
+                            GUI gui = new GUI();
+                            spiel netzwerkSpiel = new spiel(gui, null);
+                            netzwerkSpiel.starteNetzwerkVerbindung(socket, false); // false = Client wartet
+                            this.dispose();
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                            JOptionPane.showMessageDialog(this, "Verbindung fehlgeschlagen!");
+                        }
+                    }).start();
+                }
+            }
         });
 
         buttonPanel.add(btnSpielerVsBot);

@@ -47,7 +47,7 @@ public abstract class protokoll {
         }
 
         String befehlStr = teile[0];
-        command befehl = command.fromString(befehlStr);
+        Command befehl = Command.fromString(befehlStr);
 
         if (befehl == null) {
             System.err.println("Unbekannter Befehl empfangen: " + befehlStr);

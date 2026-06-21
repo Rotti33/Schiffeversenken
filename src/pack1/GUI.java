@@ -14,9 +14,12 @@ public class GUI extends JFrame {
     private JLabel statusLabel;
     private JButton drehButton; //Button zum Wechseln der Platzierungsrichtung
     
-    //Referenzen für die KI und die zentrale Spiellogik
+    //Referenzen für die KI, die zentrale Spiellogik und Netzwerksteuerung
     private KI ki;
     private Logik spiellogik;
+    private spiel netzwerkSpiel;
+    private int letzterKlickReihe = -1;
+    private int letzterKlickSpalte = -1;
 
     //Standardkonstruktor: Initialisiert das Anwendungsfenster und die Logik
     public GUI() {
@@ -84,6 +87,10 @@ public class GUI extends JFrame {
         spiellogik.setGegnerFeld(kiBoard);
     }
 
+    public void setNetzwerkSpiel(spiel netzwerkSpiel) {           //jjj
+        this.netzwerkSpiel = netzwerkSpiel;
+    }
+
     //Hilfsmethode um den Hinweistext in der oberen Statuszeile je nach Spielphase anzupassen
     private void aktualisiereStatusText() {
         if (!spiellogik.alleSchiffePlatziert()) {
@@ -127,31 +134,43 @@ public class GUI extends JFrame {
         drehButton.setEnabled(false); //Deaktiviert den Ausrichtungs-Button, da er nicht mehr benötigt wird
     }
 
+    private void refreshSpielerSpielfeldVisuell() {      //jjj
+        for (int r = 0; r < 10; r++) {
+            for (int c = 0; c < 10; c++) {
+                int zelle = spiellogik.getSpielerFeldZustand(r, c);
+                if (zelle == 1) {
+                    spielerFeld.setZellenFarbe(r, c, Color.GRAY);
+                }
+            }
+        }
+    }
+
     //Verarbeitet Angriffe des Spielers auf das gegnerische Spielfeld
     private void verarbeiteAngriff(int r, int c) {
-        //Klicks ignorieren solange der Spieler seine eigenen Schiffe noch nicht fertig platziert hat
         if (!spiellogik.alleSchiffePlatziert()) return;
-        
-        //Sofort abbrechen wenn das Spiel bereits durch einen Sieger beendet wurde
         if (spiellogik.sieg() || spiellogik.kisieg()) return;
 
-        //Schuss in der Logik auswerten lassen
+        // BEHOBEN: Exakte Schreibweise der Variable 'this.netzwerkSpiel' korrigiert!
+        if (this.netzwerkSpiel != null) {
+            this.letzterKlickReihe = r;
+            this.letzterKlickSpalte = c;
+            this.netzwerkSpiel.spielerKlicktSpielfeld(r, c);
+            return;
+        }
+
+        // Normaler Singleplayer-Modus
         int ergebnis = spiellogik.schussAufGegner(r, c);
 
-        if (ergebnis == 1) { //Fehlschuss (Wasser getroffen)
-            gegnerFeld.setZellenFarbe(r, c, Color.BLUE); //Zelle wird blau gefärbt
+        if (ergebnis == 1) { 
+            gegnerFeld.setZellenFarbe(r, c, Color.BLUE);
             statusLabel.setText("Fehlschuss auf Reihe " + (r + 1) + ", Spalte " + (c + 1));
-            
-            if (spielende()) return; //Spielende prüfen bevor die KI zieht
-            
+            if (spielende()) return; 
             kiZugAus();
-        } else if (ergebnis == 2) { //Treffer
-            gegnerFeld.setZellenFarbe(r, c, Color.RED); //Zelle wird rot gefärbt
+        } else if (ergebnis == 2) { 
+            gegnerFeld.setZellenFarbe(r, c, Color.RED);
             statusLabel.setText("TREFFER auf Reihe " + (r + 1) + ", Spalte " + (c + 1) + "!");
-            
-            spielende(); // Prüfen, ob der Spieler mit diesem Treffer gewonnen hat 
+            spielende(); 
         } else {
-            //Wenn ergebnis == 0, wurde dieses Feld bereits vorher beschossen
             statusLabel.setText("Feld schon gewählt");
         }
     }
@@ -204,5 +223,54 @@ public class GUI extends JFrame {
             return true;
         }
         return false;
+    }
+
+    // --- NETZWERK-STEUERUNG ---
+    public void visuelleSchussRueckmeldung(int ergebnis) {
+        if (letzterKlickReihe == -1 || letzterKlickSpalte == -1) return;
+
+        if (ergebnis == 0) {
+            gegnerFeld.setZellenFarbe(letzterKlickReihe, letzterKlickSpalte, Color.BLUE);
+            statusLabel.setText("Netzwerkgegner: Wasser getroffen.");
+        } else {
+            gegnerFeld.setZellenFarbe(letzterKlickReihe, letzterKlickSpalte, Color.RED);
+            statusLabel.setText(ergebnis == 2 ? "Netzwerkgegner: SCHIFF VERSENKT!" : "Netzwerkgegner: TREFFER!");
+            spiellogik.schussAufGegner(letzterKlickReihe, letzterKlickSpalte); 
+            spielende();
+        }
+    }
+
+    public int pruefeGegnerSchuss(int r, int c) {
+        int ergebnis = spiellogik.schussAufSpieler(r, c);
+        
+        if (ergebnis == 1) {
+            spielerFeld.setZellenFarbe(r, c, Color.BLUE);
+            statusLabel.setText("Gegner schießt auf (" + (r+1) + "," + (c+1) + "): Wasser!");
+            return 0;
+        } else if (ergebnis == 2) {
+            spielerFeld.setZellenFarbe(r, c, Color.RED);
+            statusLabel.setText("Gegner schießt auf (" + (r+1) + "," + (c+1) + "): TREFFER!");
+            
+            if (spiellogik.kisieg()) {
+                spielende();
+                return 2;
+            }
+            spielende();
+            return 1;
+        }
+        return 0; 
+    }
+
+    public void zeigeVerbindungVerlorenMeldung() {
+        statusLabel.setText("Verbindung zum Gegner verloren!");
+        JOptionPane.showMessageDialog(this, "Die Netzwerkverbindung wurde getrennt.", "Fehler", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public void initialisiereSpielfeld(int zeilen, int spalten) {
+        System.out.println("Netzwerk-Spielfeldgröße empfangen: " + zeilen + "x" + spalten);
+    }
+
+    public void generiereSchiffsFlotte(int[] laengen) {
+        System.out.println("Netzwerk-Flotte empfangen.");
     }
 }

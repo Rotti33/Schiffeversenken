@@ -121,4 +121,13 @@ public class Logik {
     public boolean kisieg() {
         return kiTreffer >= MAX_TREFFER;
     }
+
+    //Gibt den Zustand einer Zelle im Spielerfeld zurück (0=Wasser,1=Schiff,2=Fehlschuss,3=Treffer)
+    public int getSpielerFeldZustand(int row, int col) {
+        return spielerfeld[row][col];
+    }
+
+    public void registriereNetzwerkTreffer() {
+        spielerTreffer++;
+    }
 }

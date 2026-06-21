@@ -1,6 +1,6 @@
 package pack1;
 
-public enum command {
+public enum Command {
     SIZE,
     SHIPS,
     DONE,
@@ -17,9 +17,9 @@ public enum command {
      * @param str Der extrahierte Befehl aus der Nachricht
      * @return Das passende Command oder null, falls unbekannt.
      */
-    public static command fromString(String str) {
+    public static Command fromString(String str) {
         try {
-            return command.valueOf(str.toUpperCase());
+            return Command.valueOf(str.toUpperCase());
         } catch (IllegalArgumentException e) {
             return null;
         }

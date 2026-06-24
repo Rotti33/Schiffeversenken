@@ -140,4 +140,46 @@ public class Logik {
     public void registriereNetzwerkKiTreffer() {
         kiTreffer++;
     }
+
+// NEU: Prüft von einer getroffenen Position aus, ob das gesamte Schiff zerstört ist
+    public boolean pruefeObSchiffVersenkt(int[][] feld, int row, int col) {
+        // Richtungen für die Suche: oben, unten, links, rechts
+        int[][] richtungen = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        
+        for (int[] dir : richtungen) {
+            int r = row + dir[0];
+            int c = col + dir[1];
+            
+            // Schleife läuft so lange entlang des getroffenen Schiffs, wie Teile existieren
+            while (r >= 0 && r < 10 && c >= 0 && c < 10) {
+                if (feld[r][c] == 1) {
+                    return false; // Ein intaktes Schiffsegment (1) wurde gefunden -> Schiff noch am Leben!
+                }
+                if (feld[r][c] != 3 && feld[r][c] != 1) {
+                    break; // Ende des Schiffes erreicht (Wasser oder Fehlschuss)
+                }
+                r += dir[0];
+                c += dir[1];
+            }
+        }
+        return true; // Keine intakten Teile mehr gefunden -> Schiff ist komplett versenkt!
+    }
+
+    // Hilfsmethoden, um die Prüfung von außen für das jeweilige Feld zu starten
+    public boolean istGegnerSchiffVersenkt(int row, int col) {
+        return pruefeObSchiffVersenkt(gegnerfeld, row, col);
+    }
+
+    public boolean istSpielerSchiffVersenkt(int row, int col) {
+        return pruefeObSchiffVersenkt(spielerfeld, row, col);
+    }
+
+// NEU: Ermöglicht das Laden des Feldes aus der Speicherdatei
+    public void ladeSpielfeldManuell(int[][] neuesSpielerFeld, int[][] neuesGegnerFeld, int sTreffer, int kTreffer) {
+        this.spielerfeld = neuesSpielerFeld;
+        this.gegnerfeld = neuesGegnerFeld;
+        this.spielerTreffer = sTreffer;
+        this.kiTreffer = kTreffer;
+        this.aktuellesSchiffIndex = schiffsLaengen.length; // Setzphase direkt überspringen
+    }
 }

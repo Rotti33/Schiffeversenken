@@ -6,10 +6,11 @@ import pack1.KI.ShotResult;
 import java.awt.*;
 
 public class GUI extends JFrame {
-    //Visuelle Komponenten für die beiden 10x10 Spielfelder
+    //Visuelle Komponenten für die beiden flexiblen Spielfelder
     private Feld spielerFeld;
     private Feld gegnerFeld;
     private JButton menueButton;
+    private JComboBox<Integer> schiffsAuswahlBox;
     
     //UI-Elemente für Texte und Steuerung
     private JLabel statusLabel;
@@ -18,15 +19,22 @@ public class GUI extends JFrame {
     //Referenzen für die KI, die zentrale Spiellogik und Netzwerksteuerung
     private KI ki;
     private Logik spiellogik;
-    private boolean botSchleifeAktiv = true;
-    private spiel netzwerkSpiel;
+    private Netzwerkspiel netzwerkSpiel;
     private int letzterKlickReihe = -1;
     private int letzterKlickSpalte = -1;
-    private String spielmodus = "SINGLEPLAYER";
+    
+    private boolean botSchleifeAktiv = true;
+    private String spielmodus = "SINGLEPLAYER"; 
+    private boolean popupAktiv = false;
 
-    //Standardkonstruktor: Initialisiert das Anwendungsfenster und die Logik
+    // Standardkonstruktor (nutzt weiterhin Größe 10, falls nichts übergeben wird)
     public GUI() {
-        spiellogik = new Logik();
+        this(10);
+    }
+
+    // Flexibler Konstruktor, der die Wunschgröße direkt verarbeitet
+    public GUI(int gewaehlteGroesse) {
+        spiellogik = new Logik(gewaehlteGroesse); // Logik mit Wunschgröße starten
 
         setTitle("Schiffe versenken");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -42,17 +50,19 @@ public class GUI extends JFrame {
         JPanel feldContainer = new JPanel(new GridLayout(1, 2, 30, 0));
         feldContainer.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        //Das eigene Spielfeld: Reagiert in der Setzphase auf Mausklicks zum Platzieren
-        spielerFeld = new Feld("Dein Spielfeld", true, e -> {
+        // Das eigene Spielfeld wird mit der dynamischen Größe erstellt
+        spielerFeld = new Feld("Dein Spielfeld", gewaehlteGroesse, true, e -> {
             Point koordinaten = (Point) e.getSource();
             schiffsPlatzierung(koordinaten.x, koordinaten.y);
         });
         
-        //Das gegnerische Spielfeld: Nimmt Klicks an und führt in der Kampfphase Angriffe aus
-        gegnerFeld = new Feld("Gegnerisches Feld (KI)", true, e -> {
+        // Das gegnerische Spielfeld wird mit der dynamischen Größe erstellt
+        gegnerFeld = new Feld("Gegnerisches Feld (KI)", gewaehlteGroesse, true, e -> {
             Point koordinaten = (Point) e.getSource();
             verarbeiteAngriff(koordinaten.x, koordinaten.y);
         });
+        
+        gegnerFeld.setAktiv(false); // Startet gesperrt!
 
         //Felder dem Container hinzufügen und mittig im Fenster platzieren
         feldContainer.add(spielerFeld);
@@ -65,7 +75,7 @@ public class GUI extends JFrame {
         drehButton = new JButton("Ausrichtung: HORIZONTAL");
         drehButton.setFont(new Font("Arial", Font.PLAIN, 12));
         drehButton.addActionListener(e -> {
-            spiellogik.toggleRichtung(); //Schaltet die Logik zwischen true/false um
+            spiellogik.toggleRichtung(); 
             if (spiellogik.getIstHorizontal()) {
                 drehButton.setText("Ausrichtung: HORIZONTAL");
             } else {
@@ -75,30 +85,29 @@ public class GUI extends JFrame {
         suedPanel.add(drehButton);
 
         // Der Autosave- und Hauptmenü-Button
-JButton menueButton = new JButton("Hauptmenü");
+        menueButton = new JButton("Hauptmenü");
         menueButton.setFont(new Font("Arial", Font.PLAIN, 12));
         menueButton.addActionListener(e -> {
-            this.botSchleifeAktiv = false; 
+            this.botSchleifeAktiv = false; // Stoppt den Thread der Bots
             
             if (this.netzwerkSpiel != null) {
                 this.netzwerkSpiel.initiiereSpeichern("autosave_pvp.txt");
             } else {
                 try {
                     java.io.PrintWriter writer = new java.io.PrintWriter("autosave_singleplayer.txt");
-                    
-                    // BEHOBEN: Verlässt sich jetzt zu 100% auf die neue Variable
                     writer.println("MODUS: " + this.spielmodus);
-
                     writer.println("Spielerfeld:");
-                    for (int r = 0; r < 10; r++) {
-                        for (int c = 0; c < 10; c++) {
+                    
+                    int N = spiellogik.getGroesse();
+                    for (int r = 0; r < N; r++) {
+                        for (int c = 0; c < N; c++) {
                             writer.print(spiellogik.getSpielerFeldZustand(r, c) + " ");
                         }
                         writer.println();
                     }
                     writer.println("Gegnerfeld:");
-                    for (int r = 0; r < 10; r++) {
-                        for (int c = 0; c < 10; c++) {
+                    for (int r = 0; r < N; r++) {
+                        for (int c = 0; c < N; c++) {
                             writer.print(spiellogik.getGegnerFeldZustand(r, c) + " ");
                         }
                         writer.println();
@@ -115,47 +124,44 @@ JButton menueButton = new JButton("Hauptmenü");
         });
         suedPanel.add(menueButton);
 
-        // WICHTIG: Das Panel muss der GUI im Süden hinzugefügt werden!
         add(suedPanel, BorderLayout.SOUTH);
 
-        // Fenstergröße automatisch anpassen und mittig auf dem Bildschirm platzieren
         pack();
         setLocationRelativeTo(null);
         setVisible(true);
-    } // Hier endet der Konstruktor der GUI-Klasse
+    }
 
-    //Erweiterter Konstruktor: Wird von der Main aufgerufen um die KI-Instanz zu übergeben
-    public GUI(KI ki) {
-        this(); //Ruft zuerst den parameterlosen Standardkonstruktor darüber auf
+    // Der KI-Konstruktor akzeptiert nun die flexible Größe
+    public GUI(KI ki, int gewaehlteGroesse) {
+        this(gewaehlteGroesse); 
         this.ki = ki;
         this.spielmodus = "SINGLEPLAYER";
         
-        //Liest das verdeckte Schiffs Feld der KI aus und übergibt es an die Logik
         char[][] kiBoard = ki.getMyBoard();
         spiellogik.setGegnerFeld(kiBoard);
+        
+        // Text nach dem KI-Start einmal initialisieren
+        aktualisiereStatusText();
     }
 
-    public void setNetzwerkSpiel(spiel netzwerkSpiel) {           //jjj
+    public void setNetzwerkSpiel(Netzwerkspiel netzwerkSpiel) {           
         this.netzwerkSpiel = netzwerkSpiel;
     }
 
-    //Hilfsmethode um den Hinweistext in der oberen Statuszeile je nach Spielphase anzupassen
     private void aktualisiereStatusText() {
+        // Nutzt die neue automatische Textberechnung aus der Logik!
         if (!spiellogik.alleSchiffePlatziert()) {
-            statusLabel.setText("Platziere ein Schiff der Länge " + spiellogik.getAktuelleSchiffsLaenge());
+            statusLabel.setText("Nächstes Schiff: " + spiellogik.getAktuelleSchiffsLaenge() + " Felder.  |  " + spiellogik.getFlottenText());
         } else {
-            statusLabel.setText("Spieler darf Angreifen");
+            statusLabel.setText("Alle Schiffe platziert! Kampfphase läuft.");
         }
     }
 
-    //Verarbeitet Mausklicks auf dem eigenen Feld während der Schiffs Aufstellung
     private void schiffsPlatzierung(int r, int c) {
         int laenge = spiellogik.getAktuelleSchiffsLaenge();
         boolean horizontal = spiellogik.getIstHorizontal();
 
-        //Versucht das Schiff über die Logik-Klasse regelkonform auf dem Feld einzutragen
         if (spiellogik.platziereSpielerSchiff(r, c)) {
-            //Wenn erfolgreich werden die betroffenen Zellen auf dem GUI-Spielfeld grau gefärbt
             for (int i = 0; i < laenge; i++) {
                 if (horizontal) {
                     spielerFeld.setZellenFarbe(r, c + i, Color.GRAY);
@@ -164,29 +170,44 @@ JButton menueButton = new JButton("Hauptmenü");
                 }
             }
 
-            //Prüfen, ob nach dieser Platzierung die Setzphase abgeschlossen ist
             if (spiellogik.alleSchiffePlatziert()) {
                 starteKampfphase();
             } else {
                 aktualisiereStatusText();
             }
         } else {
-            //Fehlermeldung anzeigen wenn das Schiff das Feld verlässt oder blockiert wird
-            JOptionPane.showMessageDialog(this, "Schiff passt nicht rein", "Fehler", JOptionPane.ERROR_MESSAGE);
-        }
-    }
- //Steuerung wird von setzen auf Kampf geswitcht
-    private void starteKampfphase() {
-        aktualisiereStatusText();
-        drehButton.setEnabled(false); //Deaktiviert den Ausrichtungs-Button, da er nicht mehr benötigt wird
-        if (this.netzwerkSpiel != null) {
-            this.netzwerkSpiel.sendeReadySignal();
+            // BEHOBEN: Da die Flotte nun perfekt vorbereitet ist, liegt ein Fehler 
+            // immer daran, dass das Schiff den Rand berührt oder sich überlappt!
+            JOptionPane.showMessageDialog(this, "Schiff passt nicht rein (Überlappung oder Spielfeldrand)", "Fehler", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void refreshSpielerSpielfeldVisuell() {
-        for (int r = 0; r < 10; r++) {
-            for (int c = 0; c < 10; c++) {
+    //Steuerung wird von setzen auf Kampf geswitcht
+    private void starteKampfphase() {
+        aktualisiereStatusText();
+        drehButton.setEnabled(false); //Deaktiviert den Ausrichtungs-Button
+        
+        if (this.netzwerkSpiel != null) {
+            // 1. Dem Gegner über das Internet signalisieren, dass wir fertig sind
+            this.netzwerkSpiel.sendeReadySignal();
+            
+            // 2. Wir schalten das Feld NUR DANN frei, wenn BEIDE Seiten absolut fertig aufgestellt haben!
+            if (this.netzwerkSpiel.sindBeideBereit()) {
+                schalteGegnerFeldAktiv(this.netzwerkSpiel.istMeinZug());
+            } else {
+                schalteGegnerFeldAktiv(false);
+                statusLabel.setText("Warte, bis der Spielpartner alle Schiffe platziert hat...");
+            }
+        } else {
+            // Im normalen Singleplayer-Modus darf der Spieler nach der Setzphase sofort das gegnerfeld attackieren!
+            gegnerFeld.setAktiv(true);
+        }
+    }
+
+    private void refreshSpielerSpielfeldVisuell() {      
+        int N = spiellogik.getGroesse();
+        for (int r = 0; r < N; r++) {
+            for (int c = 0; c < N; c++) {
                 int zelle = spiellogik.getSpielerFeldZustand(r, c);
                 if (zelle == 1) {
                     spielerFeld.setZellenFarbe(r, c, Color.GRAY);
@@ -195,8 +216,7 @@ JButton menueButton = new JButton("Hauptmenü");
         }
     }
 
-    // DIE NEUE ZENTRALE SCHUSSMETHODE FÜR ALLE MODI
-    // schussAufGegnerFeld: true = Schuss geht nach rechts (Gegnerfeld), false = nach links (Spielerfeld)
+    // DIE ZENTRALE SCHUSSMETHODE FÜR ALLE MODI (Jetzt komplett dynamisch)
     public boolean verarbeiteSchussZentral(int r, int c, boolean schussAufGegnerFeld) {
         int ergebnis;
         Feld zielFeld = schussAufGegnerFeld ? gegnerFeld : spielerFeld;
@@ -230,33 +250,47 @@ JButton menueButton = new JButton("Hauptmenü");
                 spiellogik.istGegnerSchiffVersenkt(r, c) : spiellogik.istSpielerSchiffVersenkt(r, c);
 
             if (komplettVersenkt) {
+                // Wir merken uns, ob die Felder gerade aktiv waren, und sperren sie SOFORT komplett
+                boolean spielerFeldVorherAktiv = spielerFeld.isEnabled();
+                boolean gegnerFeldVorherAktiv = gegnerFeld.isEnabled();
+                
+                spielerFeld.setAktiv(false);
+                gegnerFeld.setAktiv(false);
+
                 // Bestimme den Text für das automatische Popup
                 String meldungText = schussAufGegnerFeld ? 
                     "Ein gegnerisches Schiff wurde komplett versenkt!" : "Die KI hat eines deiner Schiffe komplett zerstört!";
                 
                 // Erstelle das temporäre Popup-Fenster (JDialog)
-                JDialog autoPopup = new JDialog(this, "Treffer versenkt", false); // false = blockiert die GUI nicht im Hintergrund
+                JDialog autoPopup = new JDialog(this, "Treffer versenkt", false); 
                 JLabel infoLabel = new JLabel(meldungText, SwingConstants.CENTER);
                 infoLabel.setFont(new Font("Arial", Font.BOLD, 14));
                 infoLabel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
                 autoPopup.add(infoLabel);
                 autoPopup.pack();
-                autoPopup.setLocationRelativeTo(this); // Mittig über dem Hauptspielfeld platzieren
+                autoPopup.setLocationRelativeTo(this); // Mittig platzieren
                 autoPopup.setVisible(true);
 
                 // Dieser Timer schließt das Popup nach genau 3 Sekunden automatisch
                 Timer schliessTimer = new Timer(3000, event -> {
                     autoPopup.dispose(); // Schließt das kleine Fenster sauber
+                    
+                    // Nach den 3 Sekunden schalten wir die Felder wieder in ihren vorherigen Zustand
+                    if (!spiellogik.sieg() && !spiellogik.kisieg()) {
+                        spielerFeld.setAktiv(spielerFeldVorherAktiv);
+                        gegnerFeld.setAktiv(gegnerFeldVorherAktiv);
+                    }
                 });
                 schliessTimer.setRepeats(false);
                 schliessTimer.start();
 
-                // Wichtig für den Bot: Wir lassen den Hintergrund-Thread für 3 Sekunden schlafen,
-                // damit der Bot exakt so lange wartet, wie das Popup auf dem Bildschirm zu sehen ist!
-                try {
-                    Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                // Thread.sleep wird NUR NOCH im Bot-vs-Bot Modus aufgerufen
+                if ("BOTVSBOT".equals(this.spielmodus)) {
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
 
@@ -268,8 +302,16 @@ JButton menueButton = new JButton("Hauptmenü");
 
     //Verarbeitet Angriffe des Spielers auf das gegnerische Spielfeld (Mensch klickt)
     private void verarbeiteAngriff(int r, int c) {
+        if (this.popupAktiv) return;
+
         if (!spiellogik.alleSchiffePlatziert()) return;
         if (spiellogik.sieg() || spiellogik.kisieg()) return;
+
+        // FÜR PVP: Wenn ein Netzwerkspiel läuft, prüfen wir zuerst, ob wir überhaupt am Zug sind!
+        if (this.netzwerkSpiel != null && !this.netzwerkSpiel.istMeinZug()) {
+            statusLabel.setText("Gegner ist am Zug... Bitte warten.");
+            return; 
+        }
 
         int zustand = spiellogik.getGegnerFeldZustand(r, c);
         if (zustand == 2 || zustand == 3) {
@@ -281,21 +323,27 @@ JButton menueButton = new JButton("Hauptmenü");
             this.letzterKlickReihe = r;
             this.letzterKlickSpalte = c;
             this.netzwerkSpiel.spielerKlicktSpielfeld(r, c);
+            gegnerFeld.setAktiv(false); 
             return;
         }
 
-        // Singleplayer-Modus nutzt die zentrale Methode
+        // Normaler Singleplayer-Modus nutzt die zentrale Methode
         boolean treffer = verarbeiteSchussZentral(r, c, true);
         
         if (!treffer) {
-            gegnerFeld.setAktiv(false); // Sperren bei Wasser
+            gegnerFeld.setAktiv(false); 
             kiZugAus();
         }
     }
 
     //Berechnet und visualisiert den Gegenangriff der KI im Singleplayer
     private void kiZugAus() {
-        Timer kiTimer = new Timer(1000, e -> {
+        int verzoegerung = 1000;
+        if (letzterKlickReihe != -1 && letzterKlickSpalte != -1 && spiellogik.istSpielerSchiffVersenkt(letzterKlickReihe, letzterKlickSpalte)) {
+            verzoegerung = 4000;
+        }
+
+        Timer kiTimer = new Timer(verzoegerung, e -> {
             boolean schussGueltig = false;
             boolean kiDarfNochmal = false;
 
@@ -311,7 +359,10 @@ JButton menueButton = new JButton("Hauptmenü");
                 }
 
                 schussGueltig = true;
-                // KI nutzt die zentrale Methode
+                
+                this.letzterKlickReihe = kiReihe;
+                this.letzterKlickSpalte = kiSpalte;
+                
                 kiDarfNochmal = verarbeiteSchussZentral(kiReihe, kiSpalte, false);
                 
                 if (kiDarfNochmal) {
@@ -333,7 +384,7 @@ JButton menueButton = new JButton("Hauptmenü");
     }
 
     // Startet das automatische Match zwischen zwei Bots
-public void starteBotSchleife(KI bot1, KI bot2) {
+    public void starteBotSchleife(KI bot1, KI bot2) {
         this.spielmodus = "BOTVSBOT";
         new Thread(() -> {
             boolean spielLaeuft = true;
@@ -343,16 +394,16 @@ public void starteBotSchleife(KI bot1, KI bot2) {
             spielerFeld.setAktiv(false);
             gegnerFeld.setAktiv(false);
 
-            // Setzphase visuell überspringen, da Bots bereits aufgestellt sind
             statusLabel.setText("Bot vs. Bot Kampfphase gestartet!");
 
-            // BEHOBEN: Prüft jetzt zusätzlich, ob die Schleife aktiv bleiben soll!
             while (spielLaeuft && this.botSchleifeAktiv) {
                 try {
                     Thread.sleep(1000); 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+
+                if (!this.botSchleifeAktiv) break;
 
                 if (bot1IstDran) {
                     Koordinaten schuss = bot1.getNextShot();
@@ -365,6 +416,10 @@ public void starteBotSchleife(KI bot1, KI bot2) {
                     boolean getroffen = verarbeiteSchussZentral(schuss.x, schuss.y, true);
                     if (getroffen) {
                         bot1.update(spiellogik.sieg() ? ShotResult.VERSENKT : ShotResult.TREFFER);
+                        
+                        if (spiellogik.istGegnerSchiffVersenkt(schuss.x, schuss.y) && !spiellogik.sieg()) {
+                            try { Thread.sleep(3000); } catch (InterruptedException ex) { ex.printStackTrace(); }
+                        }
                     } else {
                         bot1.update(ShotResult.WASSER);
                         bot1IstDran = false; 
@@ -380,6 +435,10 @@ public void starteBotSchleife(KI bot1, KI bot2) {
                     boolean getroffen = verarbeiteSchussZentral(schuss.x, schuss.y, false);
                     if (getroffen) {
                         bot2.update(spiellogik.kisieg() ? ShotResult.VERSENKT : ShotResult.TREFFER);
+                        
+                        if (spiellogik.istSpielerSchiffVersenkt(schuss.x, schuss.y) && !spiellogik.kisieg()) {
+                            try { Thread.sleep(3000); } catch (InterruptedException ex) { ex.printStackTrace(); }
+                        }
                     } else {
                         bot2.update(ShotResult.WASSER);
                         bot1IstDran = true; 
@@ -407,13 +466,9 @@ public void starteBotSchleife(KI bot1, KI bot2) {
         return false;
     }
 
-    // --- NEUE NETZWERK-METHODEN & BRÜCKEN-METHODEN (FÜR STARTMENÜ & spiel) ---
+    // --- NETZWERK-METHODEN & BRÜCKEN-METHODEN (FÜR STARTMENÜ & spiel) ---
 
-    // Ermöglicht es dem Startmenü, das Schiff in die Logik-Matrix einzutragen
     public void setSpielerSchiffManuell(int r, int c) {
-        // Ein kleiner Trick, um die interne Platzierung ohne Klicks zu simulieren
-        // Wir nutzen die Java-Reflexion oder setzen es über ein Umgehen der Setzphase, 
-        // hier tragen wir es einfach direkt ein, um die Logik auf 'Schiff' (1) zu setzen.
         try {
             java.lang.reflect.Field field = Logik.class.getDeclaredField("spielerfeld");
             field.setAccessible(true);
@@ -431,12 +486,55 @@ public void starteBotSchleife(KI bot1, KI bot2) {
     public Feld getSpielerFeld() {
         return spielerFeld;
     }
-public Feld getGegnerFeld() {
+
+    public Feld getGegnerFeld() {
         return gegnerFeld;
     }
 
+    // BEHOBEN FÜR CLIENT-SYNCHRONISATION: Baut das Spielfeld des Clients dynamisch nach Servervorgabe um!
     public void initialisiereSpielfeld(int zeilen, int spalten) {
-        System.out.println("Netzwerk: Spielfeld initialisiert auf " + zeilen + "x" + spalten);
+        System.out.println("Netzwerk: Spielfeld wird initialisiert auf " + zeilen + "x" + spalten);
+        
+        // 1. Die Logik im Hintergrund auf die neue quadratische Servergröße umstellen
+        this.spiellogik = new Logik(zeilen);
+        
+        // 2. Den alten Container mit den 10x10-Feldern im Fenster finden und komplett leeren
+        // Wir suchen das Panel, das sich in der Mitte des BorderLayouts befindet
+        BorderLayout layout = (BorderLayout) getContentPane().getLayout();
+        Component altesZentrum = layout.getLayoutComponent(BorderLayout.CENTER);
+        if (altesZentrum != null) {
+            remove(altesZentrum);
+        }
+
+        // 3. Neue Spielfelder in der exakten Servergröße erschaffen
+        JPanel feldContainer = new JPanel(new GridLayout(1, 2, 30, 0));
+        feldContainer.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        spielerFeld = new Feld("Dein Spielfeld", zeilen, true, e -> {
+            Point koordinaten = (Point) e.getSource();
+            schiffsPlatzierung(koordinaten.x, koordinaten.y);
+        });
+        
+        gegnerFeld = new Feld("Gegnerisches Feld (KI)", zeilen, true, e -> {
+            Point koordinaten = (Point) e.getSource();
+            verarbeiteAngriff(koordinaten.x, koordinaten.y);
+        });
+        
+        gegnerFeld.setAktiv(false); // Startet regelkonform gesperrt!
+
+        // 4. Die neuen Felder dem Fenster hinzufügen und die Grafik zwingen, sich neu zu zeichnen
+        feldContainer.add(spielerFeld);
+        feldContainer.add(gegnerFeld);
+        add(feldContainer, BorderLayout.CENTER);
+        
+        // Aktualisiert den Statustext für das erste zu setzende Schiff
+        aktualisiereStatusText();
+
+        // WICHTIG: Java Swing mitteilen, dass das Fenster sein Layout neu berechnen und anpassen muss!
+        revalidate();
+        repaint();
+        pack();
+        setLocationRelativeTo(null);
     }
 
     public void generiereSchiffsFlotte(int[] laengen) {
@@ -444,9 +542,31 @@ public Feld getGegnerFeld() {
     }
 
     public int pruefeGegnerSchuss(int r, int c) {
-        boolean getroffen = verarbeiteSchussZentral(r, c, false);
-        if (getroffen) {
-            return spiellogik.kisieg() ? 2 : 1; 
+        int ergebnis = spiellogik.schussAufSpieler(r, c);
+        
+        if (ergebnis == 1) {
+            spielerFeld.setZellenFarbe(r, c, Color.BLUE);
+            statusLabel.setText("Gegner schießt ins Wasser bei Reihe " + (r + 1) + ", Spalte " + (c + 1));
+            return 0; 
+        } else if (ergebnis == 2) {
+            spielerFeld.setZellenFarbe(r, c, Color.RED);
+            statusLabel.setText("Gegner landete einen TREFFER bei Reihe " + (r + 1) + ", Spalte " + (c + 1) + "!");
+            
+            if (spiellogik.kisieg()) {
+                return 2; 
+            }
+            
+            if (spiellogik.istSpielerSchiffVersenkt(r, c)) {
+                statusLabel.setText("Gegner hat eines deiner Schiffe VERSENKT!");
+                Timer popupTimer = new Timer(500, e -> {
+                    JOptionPane.showMessageDialog(this, "Die KI/Gegner hat eines deiner Schiffe komplett zerstört!", "Treffer versenkt", JOptionPane.WARNING_MESSAGE);
+                });
+                popupTimer.setRepeats(false);
+                popupTimer.start();
+                
+                return 2; 
+            }
+            return 1; 
         }
         return 0; 
     }
@@ -454,22 +574,58 @@ public Feld getGegnerFeld() {
     public void visuelleSchussRueckmeldung(int ergebnis) {
         if (letzterKlickReihe == -1 || letzterKlickSpalte == -1) return;
         
-        if (ergebnis == 0) { 
-            gegnerFeld.setZellenFarbe(letzterKlickReihe, letzterKlickSpalte, Color.BLUE);
-            statusLabel.setText("Fehlschuss auf Gegnerfeld.");
-        } else { 
-            gegnerFeld.setZellenFarbe(letzterKlickReihe, letzterKlickSpalte, Color.RED);
-            statusLabel.setText("Du hast den Gegner getroffen!");
-            spiellogik.registriereNetzwerkTreffer();
+        try {
+            java.lang.reflect.Field field = Logik.class.getDeclaredField("gegnerfeld");
+            field.setAccessible(true);
+            int[][] gFeld = (int[][]) field.get(spiellogik);
             
-            if (spiellogik.istGegnerSchiffVersenkt(letzterKlickReihe, letzterKlickSpalte)) {
-                statusLabel.setText("VERSENKT! Du hast ein gegnerisches Schiff zerstört!");
-                Timer popupTimer = new Timer(500, e -> {
-                    JOptionPane.showMessageDialog(this, "Ein gegnerisches Schiff wurde komplett versenkt!", "Guter Schuss", JOptionPane.INFORMATION_MESSAGE);
-                });
-                popupTimer.setRepeats(false);
-                popupTimer.start();
+            if (ergebnis == 0) { 
+                gegnerFeld.setZellenFarbe(letzterKlickReihe, letzterKlickSpalte, Color.BLUE);
+                statusLabel.setText("Fehlschuss auf Gegnerfeld.");
+                gFeld[letzterKlickReihe][letzterKlickSpalte] = 2; 
+                
+                schalteGegnerFeldAktiv(false);
+            } else { 
+                gegnerFeld.setZellenFarbe(letzterKlickReihe, letzterKlickSpalte, Color.RED);
+                statusLabel.setText("Du hast den Gegner getroffen!");
+                spiellogik.registriereNetzwerkTreffer();
+                gFeld[letzterKlickReihe][letzterKlickSpalte] = 3; 
+                
+                if (ergebnis == 2) {
+                    this.popupAktiv = true;
+
+                    boolean spielerFeldVorherAktiv = spielerFeld.isEnabled();
+                    spielerFeld.setAktiv(false);
+                    gegnerFeld.setAktiv(false);
+
+                    statusLabel.setText("💥 VERSENKT! Du hast ein gegnerisches Schiff zerstört! 💥");
+                    
+                    JDialog autoPopup = new JDialog(this, "Treffer versenkt", false); 
+                    JLabel infoLabel = new JLabel("Ein gegnerisches Schiff wurde komplett versenkt!", SwingConstants.CENTER);
+                    infoLabel.setFont(new Font("Arial", Font.BOLD, 14));
+                    infoLabel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+                    autoPopup.add(infoLabel);
+                    autoPopup.pack();
+                    autoPopup.setLocationRelativeTo(this);
+                    autoPopup.setVisible(true);
+
+                    Timer schliessTimer = new Timer(3000, event -> {
+                        autoPopup.dispose();
+                        this.popupAktiv = false;
+
+                        if (!spiellogik.sieg() && !spiellogik.kisieg()) {
+                            spielerFeld.setAktiv(spielerFeldVorherAktiv);
+                            schalteGegnerFeldAktiv(true);
+                        }
+                    });
+                    schliessTimer.setRepeats(false);
+                    schliessTimer.start();
+                } else {
+                    schalteGegnerFeldAktiv(true);
+                }
             }
+        } catch(Exception e) { 
+            e.printStackTrace(); 
         }
         spielende();
     }
@@ -487,18 +643,16 @@ public Feld getGegnerFeld() {
         }
     }
 
-// NEU: Zeichnet das Spielfeld nach dem Laden komplett neu (HIER IN DIE GUI.JAVA!)
     public void ladeSpielstandVisuell() {
-        starteKampfphase(); // Wechselt direkt in den Kampfmodus
-        for (int r = 0; r < 10; r++) {
-            for (int c = 0; c < 10; c++) {
-                // Spielerfeld einfärben
+        starteKampfphase(); 
+        int N = spiellogik.getGroesse();
+        for (int r = 0; r < N; r++) {
+            for (int c = 0; c < N; c++) {
                 int sZustand = spiellogik.getSpielerFeldZustand(r, c);
                 if (sZustand == 1) spielerFeld.setZellenFarbe(r, c, Color.GRAY);
                 else if (sZustand == 2) spielerFeld.setZellenFarbe(r, c, Color.BLUE);
                 else if (sZustand == 3) spielerFeld.setZellenFarbe(r, c, Color.RED);
 
-                // Gegnerfeld einfärben
                 int gZustand = spiellogik.getGegnerFeldZustand(r, c);
                 if (gZustand == 2) gegnerFeld.setZellenFarbe(r, c, Color.BLUE);
                 else if (gZustand == 3) gegnerFeld.setZellenFarbe(r, c, Color.RED);

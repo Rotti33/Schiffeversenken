@@ -1,9 +1,10 @@
 package pack1;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class KI {
-    //enums - feste Variablen
     public enum Mode { SEARCH, TARGETING, DESTROYING }
     public enum ShotResult { WASSER, TREFFER, VERSENKT }
 
@@ -27,8 +28,9 @@ public class KI {
         public Koordinaten(int x, int y) { this.x = x; this.y = y; }
     }
 
-    private char[][] gegnerBoard = new char[10][10];
-    private char[][] meinBoard = new char[10][10];
+    private int groesse = 10; 
+    private char[][] gegnerBoard;
+    private char[][] meinBoard;
 
     private Mode aktuellerModus = Mode.SEARCH;
     private Koordinaten ersterTreffer = null;
@@ -36,20 +38,66 @@ public class KI {
     private Koordinaten letzterSchuss = null;
     private Richtung aktuelleRichtung = null;
     private Random random = new Random();
-    private int schwierigkeitsgrad = 1; //1 = leicht, 2 = mittel, 3 = schwer, für später vorbereitet
+    private int schwierigkeitsgrad = 1; 
 
     public KI() {
+        this(10);
+    }
+
+    public KI(int gewaehlteGroesse) {
+        this.groesse = gewaehlteGroesse;
+        this.gegnerBoard = new char[groesse][groesse];
+        this.meinBoard = new char[groesse][groesse];
         platziereAlleSchiffe();
     }
 
-    //eigene schiffe plazieren mit 1 block abstand um die schiffe
     private void platziereAlleSchiffe() {
-        int[] flotte = {5, 4, 3, 3, 2};
-        for (int laenge : flotte) {
+        int zielBelegteFelder = (int) Math.round((groesse * groesse) * 0.30);
+        List<Integer> botFlotte = new ArrayList<>();
+        
+        int rest = zielBelegteFelder;
+        
+        // BEHOBEN: Exakt derselbe harmonische Verteilungs-Algorithmus wie in der Logik!
+        while (rest >= 14) {
+            botFlotte.add(5);
+            botFlotte.add(4);
+            botFlotte.add(3);
+            botFlotte.add(2);
+            rest -= 14;
+        }
+        
+        while (rest >= 2) {
+            if (rest >= 4 && !botFlotte.contains(4)) {
+                botFlotte.add(4); rest -= 4;
+            } else if (rest >= 3) {
+                botFlotte.add(3); rest -= 3;
+            } else {
+                botFlotte.add(2); rest -= 2;
+            }
+        }
+        
+        if (rest == 1 && !botFlotte.isEmpty()) {
+            botFlotte.sort((a, b) -> a - b);
+            for (int i = 0; i < botFlotte.size(); i++) {
+                if (botFlotte.get(i) < 5) {
+                    botFlotte.set(i, botFlotte.get(i) + 1);
+                    rest = 0;
+                    break;
+                }
+            }
+            if (rest == 1) {
+                botFlotte.add(2);
+            }
+        }
+        
+        botFlotte.sort((a, b) -> b - a);
+
+        for (int laenge : botFlotte) {
             boolean platziert = false;
-            while (!platziert) {
-                int x = random.nextInt(10);
-                int y = random.nextInt(10);
+            int globaleVersuche = 0;
+            while (!platziert && globaleVersuche < 1000) {
+                int x = random.nextInt(groesse);
+                int y = random.nextInt(groesse);
                 boolean horizontal = random.nextBoolean();
                 if (checkPlatzierung(x, y, laenge, horizontal)) {
                     for (int i = 0; i < laenge; i++) {
@@ -59,6 +107,7 @@ public class KI {
                     }
                     platziert = true;
                 }
+                globaleVersuche++;
             }
         }
     }
@@ -77,7 +126,6 @@ public class KI {
         return true;
     }
 
-    //schuss - logik
     public Koordinaten getNextShot() {
         if (aktuellerModus == Mode.SEARCH) {
             letzterSchuss = getSearchShot();
@@ -91,34 +139,11 @@ public class KI {
 
     private Koordinaten getSearchShot() {
         int x, y;
-    //zurzeit noch manuell auswählen wie der Schwierigkeitsgrad gewünscht ist
-
-    //Schwierigkeitsgrad mittel: 50% Schachbrett, 50% Zufall
-    //boolean useCheckerboard = random.nextBoolean(); 
-
-    //Schwierigkeitsgrad schwer: 80% Schachbrett, 20% Zufall
-    //boolean useCheckerboard = random.nextInt(100) < 80;
-
-    //Schwierigkeitsgrad leicht: 20% Schachbrett, 80% Zufall
-    boolean useCheckerboard = random.nextInt(100) < 20;
-
-
-    //auskommentiert bis die Schwierigkeitsgrad in der GUI eingebaut ist
-    /*boolean useCheckerboard = false;
-    //Zufallswert würfelnt, um den Schwierigkeitsgrad zu bestimmen
-    int chance = random.nextInt(100);
-
-    if (schwierigkeitsgrad == 1) { // Leicht: 20% Schachbrett
-        useCheckerboard = chance < 20;
-    } else if (schwierigkeitsgrad == 3) { // schwer: 80% Schachbrett
-        useCheckerboard = chance < 80;
-    } else { // Mittel: 50% Schachbrett
-        useCheckerboard = chance < 50;
-    }*/
+        boolean useCheckerboard = random.nextInt(100) < 20;
 
         do {
-            x = random.nextInt(10);
-            y = random.nextInt(10);
+            x = random.nextInt(groesse);
+            y = random.nextInt(groesse);
 
             if (gegnerBoard[x][y] != '\u0000') continue;
             if (useCheckerboard && ((x + y) % 2 != 0)) continue;
@@ -155,7 +180,7 @@ public class KI {
 
         if (isValid(ox, oy) && gegnerBoard[ox][oy] == '\u0000') {
             aktuelleRichtung = gegenseite;
-            letzterSchuss = ersterTreffer; //zurück zum ersten treffer -> andere richtung probieren
+            letzterSchuss = ersterTreffer; 
             return new Koordinaten(ox, oy);
         }
 
@@ -166,16 +191,15 @@ public class KI {
         return getSearchShot();
     }
 
-    //update und rückmeldung
     public void update(ShotResult result) {
         if (result == ShotResult.WASSER) {
-            gegnerBoard[letzterSchuss.x][letzterSchuss.y] = 'W'; //w ist wasser
+            gegnerBoard[letzterSchuss.x][letzterSchuss.y] = 'W'; 
             if (aktuellerModus == Mode.DESTROYING && aktuelleRichtung != null) {
                 aktuelleRichtung = aktuelleRichtung.getGegenseite();
                 letzterTreffer = ersterTreffer;
             }
         } else if (result == ShotResult.TREFFER) {
-            gegnerBoard[letzterSchuss.x][letzterSchuss.y] = 'T'; //t ist freffer
+            gegnerBoard[letzterSchuss.x][letzterSchuss.y] = 'T'; 
             if (aktuellerModus == Mode.SEARCH) {
                 aktuellerModus = Mode.TARGETING;
                 ersterTreffer = letzterSchuss;
@@ -190,20 +214,20 @@ public class KI {
                 int nx = letzterSchuss.x;
                 int ny = letzterSchuss.y;
                 while (isValid(nx, ny) && gegnerBoard[nx][ny] == 'T') {
-                    gegnerBoard[nx][ny] = 'V'; //getroffene schiff wird v 
+                    gegnerBoard[nx][ny] = 'V'; 
                     nx += d[0];
                     ny += d[1];
                 }
             }
-            for (int x = 0; x < 10; x++) {
-                for (int y = 0; y < 10; y++) {
+            for (int x = 0; x < groesse; x++) {
+                for (int y = 0; y < groesse; y++) {
                     if (gegnerBoard[x][y] == 'T') {
                         for (int v = -1; v <= 1; v++) {
                             for (int h = -1; h <= 1; h++) {
                                 int nx = x + v;
                                 int ny = y + h;
                                 if (isValid(nx, ny) && gegnerBoard[nx][ny] == '\u0000') {
-                                    gegnerBoard[nx][ny] = 'W'; //angrenzende felder sind wasser
+                                    gegnerBoard[nx][ny] = 'W'; 
                                 }
                             }
                         }
@@ -225,40 +249,39 @@ public class KI {
         return ShotResult.WASSER;
     }
 
-    // BEHOBEN: Vervollständigte Methode zur Prüfung, ob das Schiff versenkt ist
+    private boolean isValid(int x, int y) {
+        return x >= 0 && x < groesse && y >= 0 && y < groesse;
+    }
+
+    public char[][] getMyBoard() {
+        return meinBoard;
+    }
+
+    public int getGroesse() {
+        return groesse;
+    }
+
     private boolean istVersenkt(int x, int y) {
         int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
         for (int[] d : dirs) {
             int nx = x + d[0];
             int ny = y + d[1];
-            while (isValid(nx, ny)) {
-                if (meinBoard[nx][ny] == 'S') {
-                    return false; // Ein Teil des Schiffs ist noch intakt
-                }
-                if (meinBoard[nx][ny] != 'X') {
-                    break; // Ende dieses Schiffssegments erreicht
-                }
+            while (isValid(nx, ny) && meinBoard[nx][ny] == 'X') {
                 nx += d[0];
                 ny += d[1];
             }
+            if (isValid(nx, ny) && meinBoard[nx][ny] == 'S') {
+                return false; 
+            }
         }
-        return true; // Alle Teile des Schiffes wurden getroffen ('X')
+        return true;
     }
 
-    // Hilfsmethode zur Überprüfung, ob gegebene Koordinaten innerhalb des Spielfelds liegen
-    private boolean isValid(int x, int y) {
-        return x >= 0 && x < 10 && y >= 0 && y < 10;
-    }
-
-    // Gibt das eigene Spielfeld zurück (für die Initialisierung im Netzwerkspiel)
-    public char[][] getMyBoard() {
-        return meinBoard;
-    }
-
-    // Verhindert das Einfrieren der GUI im Netzwerk-/Botmodus bei blockierten Koordinaten
-    public void setFeldBeschossen(int x, int y) {
-        if (isValid(x, y)) {
-            gegnerBoard[x][y] = 'W';
+    public void setFeldBeschossen(int r, int c) {
+        if (r >= 0 && r < groesse && c >= 0 && c < groesse) {
+            if (gegnerBoard[r][c] == '\u0000') {
+                gegnerBoard[r][c] = 'W';
+            }
         }
     }
 }

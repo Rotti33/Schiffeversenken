@@ -1,7 +1,6 @@
 package pack1;
 
 import javax.swing.*;
-import pack1.KI.Koordinaten;
 import java.awt.*;
 
 public class GUI extends JFrame {
@@ -170,18 +169,6 @@ public class GUI extends JFrame {
         } else {
             // Im normalen Singleplayer-Modus darf der Spieler nach der Setzphase sofort das gegnerfeld attackieren!
             gegnerFeld.setAktiv(true);
-        }
-    }
-
-    private void refreshSpielerSpielfeldVisuell() {      
-        int N = spiellogik.getGroesse();
-        for (int r = 0; r < N; r++) {
-            for (int c = 0; c < N; c++) {
-                int zelle = spiellogik.getSpielerFeldZustand(r, c);
-                if (zelle == 1) {
-                    spielerFeld.setZellenFarbe(r, c, Color.GRAY);
-                }
-            }
         }
     }
 

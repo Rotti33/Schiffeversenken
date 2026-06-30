@@ -101,9 +101,10 @@ public class Netzwerkspiel {
 
                         int ergebnis;
                         if (Netzwerkspiel.this.modusKiGegenGegner) {
-                            KI.ShotResult res = Netzwerkspiel.this.ki.empfangeSchuss(r, c);
-                            if (res == KI.ShotResult.WASSER) ergebnis = 0;
-                            else if (res == KI.ShotResult.TREFFER) ergebnis = 1;
+                            // BEHOBEN: Nutzt jetzt Spielzustand.ShotResult statt KI.ShotResult
+                            Spielzustand.ShotResult res = Netzwerkspiel.this.ki.empfangeSchuss(r, c);
+                            if (res == Spielzustand.ShotResult.WASSER) ergebnis = 0;
+                            else if (res == Spielzustand.ShotResult.TREFFER) ergebnis = 1;
                             else ergebnis = 2; 
                         } else {
                             ergebnis = gui.pruefeGegnerSchuss(r, c);
@@ -125,10 +126,11 @@ public class Netzwerkspiel {
                     protected void verarbeiteAntwort(int ergebnis) {
                         SwingUtilities.invokeLater(() -> gui.visuelleSchussRueckmeldung(ergebnis));
                         
+                        // BEHOBEN: Aktualisiert die KI mit den Enums aus Spielzustand
                         if (Netzwerkspiel.this.modusKiGegenGegner) {
-                            if (ergebnis == 0) Netzwerkspiel.this.ki.update(KI.ShotResult.WASSER);
-                            else if (ergebnis == 1) Netzwerkspiel.this.ki.update(KI.ShotResult.TREFFER);
-                            else Netzwerkspiel.this.ki.update(KI.ShotResult.VERSENKT);
+                            if (ergebnis == 0) Netzwerkspiel.this.ki.update(Spielzustand.ShotResult.WASSER);
+                            else if (ergebnis == 1) Netzwerkspiel.this.ki.update(Spielzustand.ShotResult.TREFFER);
+                            else Netzwerkspiel.this.ki.update(Spielzustand.ShotResult.VERSENKT);
                         }
 
                         if (ergebnis > 0) {
@@ -184,7 +186,6 @@ public class Netzwerkspiel {
                         java.lang.reflect.Field fFlotte = Logik.class.getDeclaredField("verbleibendeFlotte");
                         fFlotte.setAccessible(true); 
                         
-                        // Unterdrückt die Warnung für den Server-Cast beim Auslesen
                         @SuppressWarnings("unchecked")
                         java.util.List<Integer> serverFlotte = (java.util.List<Integer>) fFlotte.get(gui.getSpiellogik());
                         

@@ -5,38 +5,22 @@ import java.util.List;
 import java.util.Random;
 
 public class KI {
-    public enum Mode { SEARCH, TARGETING, DESTROYING }
-    public enum ShotResult { WASSER, TREFFER, VERSENKT }
-
-    public enum Richtung {
-        NORTH(0, -1), SOUTH(0, 1), EAST(1, 0), WEST(-1, 0);
-        public final int dx, dy;
-        Richtung(int dx, int dy) { this.dx = dx; this.dy = dy; }
-        public Richtung getGegenseite() {
-            switch (this) {
-                case NORTH: return SOUTH;
-                case SOUTH: return NORTH;
-                case EAST: return WEST;
-                case WEST: return EAST;
-                default: return this;
-            }
-        }
-    }
-
+    
     public static class Koordinaten {
         public int x, y;
         public Koordinaten(int x, int y) { this.x = x; this.y = y; }
     }
 
+    // BEHOBEN: Nutzt jetzt die Enums aus der zentralen SpielZustand.java
     private int groesse = 10; 
     private char[][] gegnerBoard;
     private char[][] meinBoard;
 
-    private Mode aktuellerModus = Mode.SEARCH;
+    private Spielzustand.Mode aktuellerModus = Spielzustand.Mode.SEARCH;
     private Koordinaten ersterTreffer = null;
     private Koordinaten letzterTreffer = null;
     private Koordinaten letzterSchuss = null;
-    private Richtung aktuelleRichtung = null;
+    private Spielzustand.Richtung aktuelleRichtung = null;
     private Random random = new Random();
     private int schwierigkeitsgrad = 1; 
 
@@ -57,7 +41,7 @@ public class KI {
         
         int rest = zielBelegteFelder;
         
-        // BEHOBEN: Exakt derselbe harmonische Verteilungs-Algorithmus wie in der Logik!
+        // Die Schiffe werden harmonisch nach dem Verteilungsschlüssel aufgeteilt
         while (rest >= 14) {
             botFlotte.add(5);
             botFlotte.add(4);
@@ -126,10 +110,11 @@ public class KI {
         return true;
     }
 
+    //schuss - logik
     public Koordinaten getNextShot() {
-        if (aktuellerModus == Mode.SEARCH) {
+        if (aktuellerModus == Spielzustand.Mode.SEARCH) {
             letzterSchuss = getSearchShot();
-        } else if (aktuellerModus == Mode.TARGETING) {
+        } else if (aktuellerModus == Spielzustand.Mode.TARGETING) {
             letzterSchuss = getTargetingShot();
         } else {
             letzterSchuss = getDestroyingShot();
@@ -154,7 +139,7 @@ public class KI {
     }
 
     private Koordinaten getTargetingShot() {
-        for (Richtung d : Richtung.values()) {
+        for (Spielzustand.Richtung d : Spielzustand.Richtung.values()) {
             int nx = ersterTreffer.x + d.dx;
             int ny = ersterTreffer.y + d.dy;
             if (isValid(nx, ny) && gegnerBoard[nx][ny] == '\u0000') {
@@ -162,7 +147,7 @@ public class KI {
                 return new Koordinaten(nx, ny);
             }
         }
-        aktuellerModus = Mode.SEARCH;
+        aktuellerModus = Spielzustand.Mode.SEARCH;
         return getSearchShot();
     }
 
@@ -174,7 +159,7 @@ public class KI {
             return new Koordinaten(nx, ny);
         }
 
-        Richtung gegenseite = aktuelleRichtung.getGegenseite();
+        Spielzustand.Richtung gegenseite = aktuelleRichtung.getGegenseite();
         int ox = ersterTreffer.x + gegenseite.dx;
         int oy = ersterTreffer.y + gegenseite.dy;
 
@@ -184,30 +169,31 @@ public class KI {
             return new Koordinaten(ox, oy);
         }
 
-        aktuellerModus = Mode.SEARCH;
+        aktuellerModus = Spielzustand.Mode.SEARCH;
         ersterTreffer = null;
         letzterTreffer = null;
         aktuelleRichtung = null;
         return getSearchShot();
     }
 
-    public void update(ShotResult result) {
-        if (result == ShotResult.WASSER) {
+    //update und rückmeldung
+    public void update(Spielzustand.ShotResult result) {
+        if (result == Spielzustand.ShotResult.WASSER) {
             gegnerBoard[letzterSchuss.x][letzterSchuss.y] = 'W'; 
-            if (aktuellerModus == Mode.DESTROYING && aktuelleRichtung != null) {
+            if (aktuellerModus == Spielzustand.Mode.DESTROYING && aktuelleRichtung != null) {
                 aktuelleRichtung = aktuelleRichtung.getGegenseite();
                 letzterTreffer = ersterTreffer;
             }
-        } else if (result == ShotResult.TREFFER) {
+        } else if (result == Spielzustand.ShotResult.TREFFER) {
             gegnerBoard[letzterSchuss.x][letzterSchuss.y] = 'T'; 
-            if (aktuellerModus == Mode.SEARCH) {
-                aktuellerModus = Mode.TARGETING;
+            if (aktuellerModus == Spielzustand.Mode.SEARCH) {
+                aktuellerModus = Spielzustand.Mode.TARGETING;
                 ersterTreffer = letzterSchuss;
             } else {
-                aktuellerModus = Mode.DESTROYING;
+                aktuellerModus = Spielzustand.Mode.DESTROYING;
             }
             letzterTreffer = letzterSchuss;
-        } else if (result == ShotResult.VERSENKT) {
+        } else if (result == Spielzustand.ShotResult.VERSENKT) {
             gegnerBoard[letzterSchuss.x][letzterSchuss.y] = 'T';
             int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
             for (int[] d : dirs) {
@@ -234,19 +220,19 @@ public class KI {
                     }
                 }
             }
-            aktuellerModus = Mode.SEARCH;
+            aktuellerModus = Spielzustand.Mode.SEARCH;
             ersterTreffer = null;
             letzterTreffer = null;
             aktuelleRichtung = null;
         }
     }
 
-    public ShotResult empfangeSchuss(int x, int y) {
+    public Spielzustand.ShotResult empfangeSchuss(int x, int y) {
         if (meinBoard[x][y] == 'S') {
             meinBoard[x][y] = 'X';
-            return istVersenkt(x, y) ? ShotResult.VERSENKT : ShotResult.TREFFER;
+            return istVersenkt(x, y) ? Spielzustand.ShotResult.VERSENKT : Spielzustand.ShotResult.TREFFER;
         }
-        return ShotResult.WASSER;
+        return Spielzustand.ShotResult.WASSER;
     }
 
     private boolean isValid(int x, int y) {

@@ -127,66 +127,48 @@ public class Startmenu extends JFrame {
 
         // 4. Letztes Spiel laden
         btnSpielLaden.addActionListener(e -> {
-            try {
-                BufferedReader reader = new BufferedReader(new FileReader("autosave_singleplayer.txt"));
-                String modusZeile = reader.readLine(); 
-                boolean warBotVsBot = modusZeile.contains("BOTVSBOT");
+            int[] datenMappe = new int[3]; // [SpielerTreffer, KiTreffer, WarBotVsBotModus]
+            Logik geladenieLogik = Speicher.ladeSpiel("autosave_singleplayer.txt", datenMappe);
 
-                reader.readLine(); 
-                
-                int ermittelteGroesse = 0;
-                reader.mark(10000);
-                String testZeile = reader.readLine();
-                if (testZeile != null && !testZeile.startsWith("Gegnerfeld:")) {
-                    ermittelteGroesse = testZeile.trim().split(" ").length;
-                }
-                reader.reset();
-
-                int[][] geladenesSpielerFeld = new int[ermittelteGroesse][ermittelteGroesse];
-                int[][] geladenesGegnerFeld = new int[ermittelteGroesse][ermittelteGroesse];
-                int sTreffer = 0;
-                int kTreffer = 0;
-
-                for (int r = 0; r < ermittelteGroesse; r++) {
-                    String zeile = reader.readLine();
-                    String[] werte = zeile.trim().split(" ");
-                    for (int c = 0; c < ermittelteGroesse; c++) {
-                        geladenesSpielerFeld[r][c] = Integer.parseInt(werte[c]);
-                        if (geladenesSpielerFeld[r][c] == 3) kTreffer++; 
-                    }
-                }
-
-                reader.readLine(); 
-                for (int r = 0; r < ermittelteGroesse; r++) {
-                    String zeile = reader.readLine();
-                    String[] werte = zeile.trim().split(" ");
-                    for (int c = 0; c < ermittelteGroesse; c++) {
-                        geladenesGegnerFeld[r][c] = Integer.parseInt(werte[c]);
-                        if (geladenesGegnerFeld[r][c] == 3) sTreffer++; 
-                    }
-                }
-                reader.close();
+            if (geladenieLogik != null) {
+                int groesse = geladenieLogik.getGroesse();
+                boolean warBotVsBot = (datenMappe[2] == 1);
 
                 if (warBotVsBot) {
-                    KI bot1 = new KI(ermittelteGroesse);
-                    KI bot2 = new KI(ermittelteGroesse);
-                    GUI gui = new GUI(ermittelteGroesse); 
-                    gui.getSpiellogik().ladeSpielfeldManuell(geladenesSpielerFeld, geladenesGegnerFeld, sTreffer, kTreffer);
+                    KI bot1 = new KI(groesse);
+                    KI bot2 = new KI(groesse);
+                    GUI gui = new GUI(groesse); 
+                    
+                    try {
+                        java.lang.reflect.Field fSpieler = Logik.class.getDeclaredField("spielerfeld");
+                        java.lang.reflect.Field fGegner = Logik.class.getDeclaredField("gegnerfeld");
+                        fSpieler.setAccessible(true); fGegner.setAccessible(true);
+                        int[][] sFeld = (int[][]) fSpieler.get(geladenieLogik);
+                        int[][] gFeld = (int[][]) fGegner.get(geladenieLogik);
+                        gui.getSpiellogik().ladeSpielfeldManuell(sFeld, gFeld, datenMappe[0], datenMappe[1]);
+                    } catch(Exception ex) { ex.printStackTrace(); }
+
                     gui.ladeSpielstandVisuell();
                     gui.getSpielerFeld().setAktiv(false);
                     gui.getGegnerFeld().setAktiv(false);
                     gui.starteBotSchleife(bot1, bot2);
                 } else {
-                    KI ki = new KI(ermittelteGroesse); 
-                    GUI gui = new GUI(ki, ermittelteGroesse);
-                    gui.getSpiellogik().ladeSpielfeldManuell(geladenesSpielerFeld, geladenesGegnerFeld, sTreffer, kTreffer);
+                    KI ki = new KI(groesse); 
+                    GUI gui = new GUI(ki, groesse);
+                    
+                    try {
+                        java.lang.reflect.Field fSpieler = Logik.class.getDeclaredField("spielerfeld");
+                        java.lang.reflect.Field fGegner = Logik.class.getDeclaredField("gegnerfeld");
+                        fSpieler.setAccessible(true); fGegner.setAccessible(true);
+                        int[][] sFeld = (int[][]) fSpieler.get(geladenieLogik);
+                        int[][] gFeld = (int[][]) fGegner.get(geladenieLogik);
+                        gui.getSpiellogik().ladeSpielfeldManuell(sFeld, gFeld, datenMappe[0], datenMappe[1]);
+                    } catch(Exception ex) { ex.printStackTrace(); }
+
                     gui.ladeSpielstandVisuell();
                 }
-                
                 this.dispose(); 
-                System.out.println("Spielstand erfolgreich geladen!");
-            } catch (Exception ex) {
-                ex.printStackTrace();
+            } else {
                 JOptionPane.showMessageDialog(this, "Kein gespeicherter Spielstand gefunden!", "Fehler", JOptionPane.ERROR_MESSAGE);
             }
         });

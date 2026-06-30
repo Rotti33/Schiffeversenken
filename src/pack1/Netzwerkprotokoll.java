@@ -5,12 +5,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
 
-public abstract class protokoll {
+public abstract class Netzwerkprotokoll {
 
     private final BufferedReader netzwerkReader;
     private final PrintWriter netzwerkWriter;
 
-    public protokoll(BufferedReader netzwerkReader, PrintWriter netzwerkWriter) {
+    public Netzwerkprotokoll(BufferedReader netzwerkReader, PrintWriter netzwerkWriter) {
         this.netzwerkReader = netzwerkReader;
         this.netzwerkWriter = netzwerkWriter;
     }

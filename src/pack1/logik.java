@@ -123,24 +123,65 @@ public class Logik {
         if (alleSchiffePlatziert()) return false;
         int laenge = getAktuelleSchiffsLaenge();
 
+        // 1. VORAB-PRÜFUNG: Passt das Schiff überhaupt auf das Feld und hält es den 1-Block-Abstand ein?
         if (istHorizontal) {
-            if (c + laenge > groesse) return false;
+            if (c + laenge > groesse) return false; // Schiff ragt über den rechten Rand
+            
+            // Schleife über jedes Segment des geplanten Schiffes
             for (int i = 0; i < laenge; i++) {
-                if (spielerfeld[r][c + i] != 0) return false;
+                int currentR = r;
+                int currentC = c + i;
+                
+                // Prüft alle 8 umliegenden Felder (von -1 bis +1 in Reihe und Spalte)
+                for (int v = -1; v <= 1; v++) {
+                    for (int h = -1; h <= 1; h++) {
+                        int checkR = currentR + v;
+                        int checkC = currentC + h;
+                        
+                        // Wenn das Nachbarfeld innerhalb des Spielfelds liegt und bereits ein Schiff (1) enthält
+                        if (checkR >= 0 && checkR < groesse && checkC >= 0 && checkC < groesse) {
+                            if (spielerfeld[checkR][checkC] == 1) {
+                                return false; // ABBRUCH: Ein anderes Schiff ist zu nah dran!
+                            }
+                        }
+                    }
+                }
             }
+            
+            // 2. PLATZIERUNG: Wenn der Abstand überall stimmt, wird das Schiff gebaut
             for (int i = 0; i < laenge; i++) {
                 spielerfeld[r][c + i] = 1;
             }
         } else {
-            if (r + laenge > groesse) return false;
+            if (r + laenge > groesse) return false; // Schiff ragt über den unteren Rand
+            
+            // Schleife über jedes Segment des geplanten Schiffes
             for (int i = 0; i < laenge; i++) {
-                if (spielerfeld[r + i][c] != 0) return false;
+                int currentR = r + i;
+                int currentC = c;
+                
+                // Prüft alle 8 umliegenden Felder (von -1 bis +1 in Reihe und Spalte)
+                for (int v = -1; v <= 1; v++) {
+                    for (int h = -1; h <= 1; h++) {
+                        int checkR = currentR + v;
+                        int checkC = currentC + h;
+                        
+                        if (checkR >= 0 && checkR < groesse && checkC >= 0 && checkC < groesse) {
+                            if (spielerfeld[checkR][checkC] == 1) {
+                                return false; // ABBRUCH: Ein anderes Schiff ist zu nah dran!
+                            }
+                        }
+                    }
+                }
             }
+            
+            // 2. PLATZIERUNG
             for (int i = 0; i < laenge; i++) {
                 spielerfeld[r + i][c] = 1;
             }
         }
 
+        // Wenn das Schiff erfolgreich gesetzt wurde, aus der liste streichen
         this.aktuellBelegteFelder += laenge;
         verbleibendeFlotte.remove(0); 
         return true;

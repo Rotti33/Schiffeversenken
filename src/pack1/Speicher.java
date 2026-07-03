@@ -6,7 +6,7 @@ import java.io.PrintWriter;
 
 public class Speicher {
 
-    // Speichert den aktuellen Zustand eines Singleplayer- oder Bot-Spiels
+    //Speichert den aktuellen Zustand eines Singleplayer- oder Bot-Spiels
     public static void speichereSpiel(Logik spiellogik, String spielmodus, String dateiname) {
         try {
             PrintWriter writer = new PrintWriter(dateiname);
@@ -35,15 +35,15 @@ public class Speicher {
         }
     }
 
-    // Lädt die Daten aus der Datei und gibt ein fertiges Logik-Zustandsobjekt zurück
+    //Lädt die Daten aus der Datei wieder
     public static Logik ladeSpiel(String dateiname, int[] trefferArray) {
         try {
             BufferedReader reader = new BufferedReader(new FileReader(dateiname));
             String modusZeile = reader.readLine(); 
-            // Wir merken uns den Modus (Zweck für die Modus-Weichen im Hauptmenü)
+            //Modus wird hier gemerkt
             trefferArray[2] = modusZeile.contains("BOTVSBOT") ? 1 : 0;
 
-            reader.readLine(); // "Spielerfeld:"
+            reader.readLine(); //"Spielerfeld:"
             
             int ermittelteGroesse = 0;
             reader.mark(10000);
@@ -67,7 +67,7 @@ public class Speicher {
                 }
             }
 
-            reader.readLine(); // "Gegnerfeld:"
+            reader.readLine(); //"Gegnerfeld:"
             for (int r = 0; r < ermittelteGroesse; r++) {
                 String zeile = reader.readLine();
                 String[] werte = zeile.trim().split(" ");
@@ -78,11 +78,11 @@ public class Speicher {
             }
             reader.close();
 
-            // Erstellt die Logik mit der ermittelten Größe und füttert sie mit den alten Treffern
+            //Erstellt die Logik mit der ermittelten Größe und füllt sie mit den alten Treffern
             Logik geladeneLogik = new Logik(ermittelteGroesse);
             geladeneLogik.ladeSpielfeldManuell(geladenesSpielerFeld, geladenesGegnerFeld, sTreffer, kTreffer);
             
-            // Trefferanzahl für die GUI im Array zwischenspeichern [Spielertreffer, KI-Treffer]
+            //Trefferanzahl für die GUI im Array zwischenspeichern [Spielertreffer, KI-Treffer]
             trefferArray[0] = sTreffer;
             trefferArray[1] = kTreffer;
             

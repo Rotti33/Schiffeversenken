@@ -101,9 +101,13 @@ public class KI {
             int nx = horizontal ? x + i : x;
             int ny = horizontal ? y : y + i;
             if (!isValid(nx, ny)) return false;
+            
+            // Scannt alle 8 Nachbarfelder um das Bot-Schiff segmentweise ab
             for (int v = -1; v <= 1; v++) {
                 for (int h = -1; h <= 1; h++) {
-                    if (isValid(nx + v, ny + h) && meinBoard[nx + v][ny + h] == 'S') return false;
+                    if (isValid(nx + v, ny + h) && meinBoard[nx + v][ny + h] == 'S') {
+                        return false; // ABBRUCH: Bot-Schiffe würden sich berühren
+                    }
                 }
             }
         }

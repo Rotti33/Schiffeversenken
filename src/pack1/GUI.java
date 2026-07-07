@@ -3,33 +3,117 @@ package pack1;
 import javax.swing.*;
 import java.awt.*;
 
+/**
+ * Hauptbenutzeroberfläche des Schiffe-versenken-Spiels.
+ * 
+ * Diese Klasse verwaltet die gesamte GUI mit zwei Spielfeldern (Spieler und Gegner),
+ * Steuerungselementen und visuellen Rückmeldungen. Sie unterstützt:
+ * - Singleplayer-Modus (Mensch vs. KI)
+ * - CPU vs. CPU-Modus (zwei Bots spielen gegeneinander)
+ * - Netzwerk-Multiplayer-Modus (Mensch vs. Mensch)
+ * - Schiffsplatzierung und Kampfphase
+ * - Versenkungserkennung mit Pop-ups
+ * - Automatisches Speichern und Laden
+ * 
+ * Die GUI wurde flexibel entworfen, um verschiedene Spielfeldgrößen zu unterstützen
+ * und responsive auf alle Modi zu reagieren.
+ * 
+ * @author Lisa Renner, Rodrigo Malisi Sousa
+ * @version 1.0
+ * @see Feld
+ * @see Logik
+ * @see KI
+ * @see Netzwerkspiel
+ */
 public class GUI extends JFrame {
-    //Visuelle Komponenten für die beiden flexiblen Spielfelder
+    /**
+     * Visuelle Darstellung des Spielerfeldes (linke Seite).
+     * Der Spieler platziert hier seine Schiffe und sieht gegnerische Schüsse.
+     */
     private Feld spielerFeld;
+    
+    /**
+     * Visuelle Darstellung des Gegnerfeldes (rechte Seite).
+     * Der Spieler schießt hier und sieht die Ergebnisse seiner Schüsse.
+     */
     private Feld gegnerFeld;
+    
+    /**
+     * Button zum Speichern und Zurückkehr zum Hauptmenü.
+     */
     private JButton menueButton;
     
-    //UI-Elemente für Texte und Steuerung
+    /**
+     * Statuszeile am oberen Rand, die Spielinformationen anzeigt.
+     */
     private JLabel statusLabel;
-    private JButton drehButton; //Button zum Wechseln der Platzierungsrichtung
     
-    //Referenzen für die KI, die zentrale Spiellogik und Netzwerksteuerung
+    /**
+     * Button zum Wechseln der Schiffs-Ausrichtung (Horizontal/Vertikal).
+     */
+    private JButton drehButton;
+    
+    /**
+     * Referenz zur KI-Instanz (nur im Singleplayer-Modus).
+     */
     private KI ki;
+    
+    /**
+     * Zentrale Spiellogik mit Feldverwaltung und Regelproblematik.
+     */
     private Logik spiellogik;
+    
+    /**
+     * Referenz zur Netzwerk-Verwaltung (nur im Netzwerk-Modus).
+     */
     private Netzwerkspiel netzwerkSpiel;
+    
+    /**
+     * Zeilenindex des letzten Spieler-Klicks (für Schussverarbeitung).
+     */
     private int letzterKlickReihe = -1;
+    
+    /**
+     * Spaltenindex des letzten Spieler-Klicks (für Schussverarbeitung).
+     */
     private int letzterKlickSpalte = -1;
     
+    /**
+     * Flag zur Kontrolle der Bot-vs-Bot-Schleife.
+     */
     private boolean botSchleifeAktiv = true;
-    private String spielmodus = "SINGLEPLAYER"; 
+    
+    /**
+     * Spielmodus als String ("SINGLEPLAYER", "CPUVSCPU", "NETZWERK").
+     */
+    private String spielmodus = "SINGLEPLAYER";
+    
+    /**
+     * Flag zur Verhinderung von Überlappungen bei Pop-up-Anzeigen.
+     */
     private boolean popupAktiv = false;
 
-    //Standardkonstruktor (Gibt die Größe 10, falls nichts übergeben wird)
+    /**
+     * Standardkonstruktor mit Spielfeldgröße 10x10.
+     */
     public GUI() {
         this(10);
     }
 
-    //Flexibler Konstruktor, der die Wunschgröße direkt verarbeitet
+    /**
+     * Hauptkonstruktor mit flexibler Spielfeldgröße.
+     * 
+     * Erstellt die GUI mit:
+     * - Zwei NxN-Spielfeldern (nebeneinander)
+     * - Statuszeile mit Spielinformationen
+     * - Steuerungs-Panel mit Ausrichtungs- und Menü-Buttons
+     * - Vorinitialisierter Logik mit harmonischer Flottenverteilung
+     * 
+     * Das gegnerische Feld startet gesperrt (nicht klickbar), wird aber
+     * nach Abschluss der Schiffsplatzierung freigegeben.
+     * 
+     * @param gewaehlteGroesse Die Größe des quadratischen Spielfeldes
+     */
     public GUI(int gewaehlteGroesse) {
         spiellogik = new Logik(gewaehlteGroesse); //Logik mit Wunschgröße starten
 
@@ -104,7 +188,15 @@ public class GUI extends JFrame {
         setVisible(true);
     }
 
-    //Der KI-Konstruktor übrnimmt die flexible Größe
+    /**
+     * Konstruktor für Singleplayer-Modus (Spieler vs. KI).
+     * 
+     * Initialisiert die GUI mit einer KI-Instanz und setzt das gegnerische Feld
+     * mit den KI-Schiffen. Der Spielmodus wird auf "SINGLEPLAYER" gesetzt.
+     * 
+     * @param ki Die KI-Instanz als Gegner
+     * @param gewaehlteGroesse Die Größe des Spielfeldes
+     */
     public GUI(KI ki, int gewaehlteGroesse) {
         this(gewaehlteGroesse); 
         this.ki = ki;
@@ -115,10 +207,20 @@ public class GUI extends JFrame {
         aktualisiereStatusText();
     }
 
+    /**
+     * Setzt die Netzwerk-Verwaltung für Multiplayer-Spiele.
+     * 
+     * @param netzwerkSpiel Die Netzwerkspiel-Instanz für Multiplayer-Kommunikation
+     */
     public void setNetzwerkSpiel(Netzwerkspiel netzwerkSpiel) {           
         this.netzwerkSpiel = netzwerkSpiel;
     }
 
+    /**
+     * Aktualisiert die Statuszeile mit aktuellen Spielinformationen.
+     * 
+     * Zeigt entweder die noch zu platzierenden Schiffe oder die "Kampfphase gestartet"-Meldung.
+     */
     private void aktualisiereStatusText() {
         if (!spiellogik.alleSchiffePlatziert()) {
             statusLabel.setText("N\u00e4chstes Schiff: " + spiellogik.getAktuelleSchiffsLaenge() + " Felder.  |  " + spiellogik.getFlottenText());
@@ -127,6 +229,15 @@ public class GUI extends JFrame {
         }
     }
 
+    /**
+     * Verarbeitet die Platzierung eines Schiffes auf dem Spielerfeld.
+     * 
+     * Validiert die Position, visualisiert das Schiff mit grauer Färbung und
+     * schaltet zur Kampfphase um, wenn alle Schiffe platziert wurden.
+     * 
+     * @param r Zeilenindex der Platzierung
+     * @param c Spaltenindex der Platzierung
+     */
     private void schiffsPlatzierung(int r, int c) {
         int laenge = spiellogik.getAktuelleSchiffsLaenge();
         boolean horizontal = spiellogik.getIstHorizontal();
@@ -150,7 +261,12 @@ public class GUI extends JFrame {
         }
     }
 
-    //Steuerung wird von setzen auf Kampf geswitcht
+    /**
+     * Wechselt von der Platzierungsphase zur Kampfphase.
+     * 
+     * Deaktiviert den Ausrichtungs-Button und aktiviert das gegnerische Feld.
+     * Im Netzwerk-Modus wird ein Ready-Signal gesendet und auf beide Spieler gewartet.
+     */
     private void starteKampfphase() {
         aktualisiereStatusText();
         drehButton.setEnabled(false); //Deaktiviert den Ausrichtungs-Button, da er nicht mehr benötigt wird
@@ -172,7 +288,17 @@ public class GUI extends JFrame {
         }
     }
 
-    //Die Schussmethode für alle Modis
+    /**
+     * Zentrale Methode zur Verarbeitung aller Schüsse im Spiel.
+     * 
+     * Verarbeitet Schüsse, visualisiert Ergebnisse (Wasser/Treffer/Versenkt),
+     * zeigt automatische Pop-ups bei versenkten Schiffen und erkennt Spielende.
+     * 
+     * @param r Zeilenindex des Schusses
+     * @param c Spaltenindex des Schusses
+     * @param schussAufGegnerFeld true für Schuss auf Gegner; false auf Spieler
+     * @return true wenn Treffer (Extra-Zug); false wenn Wasser
+     */
     public boolean verarbeiteSchussZentral(int r, int c, boolean schussAufGegnerFeld) {
         int ergebnis;
         Feld zielFeld = schussAufGegnerFeld ? gegnerFeld : spielerFeld;
@@ -256,7 +382,15 @@ public class GUI extends JFrame {
         return false; 
     }
 
-    //Verarbeitet Angriffe des Spielers auf das gegnerische Spielfeld (Mensch klickt)
+    /**
+     * Verarbeitet Angriffe des menschlichen Spielers auf das gegnerische Feld.
+     * 
+     * Überprüft Spielzustände, Zugteilung (besonders im Netzwerk-Modus),
+     * validiert bereits beschossene Felder und delegiert an zentrale Schussverarbeitung.
+     * 
+     * @param r Zeilenindex des Angriffes
+     * @param c Spaltenindex des Angriffes
+     */
     private void verarbeiteAngriff(int r, int c) {
         if (this.popupAktiv) return;
 
@@ -292,7 +426,13 @@ public class GUI extends JFrame {
         }
     }
 
-    //Berechnet und visualisiert den Gegenangriff der KI im Singleplayer
+    /**
+     * Führt einen KI-Zug aus (Singleplayer-Modus).
+     * 
+     * Mit verzögertem Timer, berechnet die KI den nächsten Schuss, visualisiert ihn
+     * und aktualisiert die KI-Logik mit dem Ergebnis. Nach einem Fehlschuss wird
+     * das Gegnerfeld freigegeben, nach einem Treffer folgt ein automatischer weiterer Zug.
+     */
     private void kiZugAus() {
         int verzoegerung = 1000;
         if (letzterKlickReihe != -1 && letzterKlickSpalte != -1 && spiellogik.istSpielerSchiffVersenkt(letzterKlickReihe, letzterKlickSpalte)) {
@@ -340,7 +480,16 @@ public class GUI extends JFrame {
         kiTimer.start();
     }
 
-    //Startet das automatische Match zwischen zwei Bots
+    /**
+     * Startet eine automatische Bot-vs-Bot-Kampfschleife.
+     * 
+     * Zwei KI-Instanzen spielen abwechselnd gegeneinander mit 1 Sekunde Pause
+     * zwischen den Zügen. Die Schleife läuft in einem separaten Thread und
+     * kann durch das botSchleifeAktiv-Flag gestoppt werden.
+     * 
+     * @param bot1 Erste KI-Instanz
+     * @param bot2 Zweite KI-Instanz
+     */
     public void starteBotSchleife(KI bot1, KI bot2) {
         this.spielmodus = "CPUVSCPU";
         new Thread(() -> {
@@ -405,7 +554,14 @@ public class GUI extends JFrame {
         }).start();
     }
 
-    //Hilfsmethode zur Überprüfung und Anzeige des Spielendes
+    /**
+     * Überprüft und zeigt das Spielende an.
+     * 
+     * Prüft auf Sieg oder Niederlage und zeigt entsprechende Pop-ups
+     * mit Nachrichten und Status-Updates.
+     * 
+     * @return true wenn Spiel vorbei; false sonst
+     */
     private boolean spielende() {
         if (spiellogik.sieg()) {
             statusLabel.setText("SIEG! Alle gegnerischen Schiffe wurden versenkt!");
@@ -432,14 +588,29 @@ public class GUI extends JFrame {
         }
     }
 
+    /**
+     * Gibt die Spiellogik-Instanz zurück.
+     * 
+     * @return Die zentrale Spiellogik
+     */
     public Logik getSpiellogik() {
         return spiellogik;
     }
 
+    /**
+     * Gibt das Spielerfeld zurück.
+     * 
+     * @return Das Spielerfeld-Panel
+     */
     public Feld getSpielerFeld() {
         return spielerFeld;
     }
 
+    /**
+     * Gibt das Gegnerfeld zurück.
+     * 
+     * @return Das Gegnerfeld-Panel
+     */
     public Feld getGegnerFeld() {
         return gegnerFeld;
     }
@@ -452,6 +623,16 @@ public class GUI extends JFrame {
         System.out.println("Netzwerk: Flotte empfangen.");
     }
 
+    /**
+     * Prüft einen gegnerischen Schuss (Netzwerk-Modus).
+     * 
+     * Verarbeitet den Schuss auf das Spielerfeld, visualisiert das Ergebnis
+     * und gibt ein Ergebnis-Flag zurückkehr (0=Wasser, 1=Treffer, 2=Versenkt).
+     * 
+     * @param r Zeilenindex des gegnerischen Schusses
+     * @param c Spaltenindex des gegnerischen Schusses
+     * @return Ergebnis-Code: 0=Wasser, 1=Treffer, 2=Versenkt
+     */
     public int pruefeGegnerSchuss(int r, int c) {
         int ergebnis = spiellogik.schussAufSpieler(r, c);
         
@@ -482,6 +663,15 @@ public class GUI extends JFrame {
         return 0; 
     }
 
+    /**
+     * Visualisiert das Ergebnis eines eigenen Schusses (Netzwerk-Modus).
+     * 
+     * Empfängt die Antwort vom Gegner, färbt das Gegnerfeld entsprechend
+     * und zeigt Pop-ups bei versenkten Schiffen. Steuert die Zugteilung
+     * basierend auf dem Ergebnis.
+     * 
+     * @param ergebnis Das Schuss-Ergebnis vom Gegner (0=Wasser, 1=Treffer, 2=Versenkt)
+     */
     public void visuelleSchussRueckmeldung(int ergebnis) {
         if (letzterKlickReihe == -1 || letzterKlickSpalte == -1) return;
         
@@ -541,10 +731,20 @@ public class GUI extends JFrame {
         spielende();
     }
 
+    /**
+     * Zeigt eine Fehlermeldung an, wenn die Netzwerkverbindung verloren geht.
+     */
     public void zeigeVerbindungVerlorenMeldung() {
         JOptionPane.showMessageDialog(this, "Verbindung zum Netzwerk-Spielpartner verloren!", "Fehler", JOptionPane.ERROR_MESSAGE);
     }
 
+    /**
+     * Aktiviert oder deaktiviert das gegnerische Feld basierend auf Zugteilung.
+     * 
+     * Aktualisiert auch die Statuszeile mit entsprechenden Meldungen.
+     * 
+     * @param istMeinZug true wenn dieser Spieler am Zug ist; false sonst
+     */
     public void schalteGegnerFeldAktiv(boolean istMeinZug) {
         gegnerFeld.setAktiv(istMeinZug);
         if (istMeinZug) {
@@ -554,6 +754,12 @@ public class GUI extends JFrame {
         }
     }
 
+    /**
+     * Lädt und visualisiert einen gespeicherten Spielstand.
+     * 
+     * Zeigt alle bisherigen Schüsse und Treffermarkierungen auf beiden Feldern
+     * und schaltet in die Kampfphase um.
+     */
     public void ladeSpielstandVisuell() {
         starteKampfphase(); 
         int N = spiellogik.getGroesse();

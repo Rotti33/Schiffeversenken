@@ -5,8 +5,40 @@ import java.awt.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+/**
+ * Hauptmenü-Fenster für das Schiffe-versenken-Spiel.
+ * 
+ * Diese Klasse präsentiert die Benutzeroberfläche des Startmenüs mit vier Spielmodi:
+ * 1. Spieler vs. CPU - Ein Spieler spielt gegen die KI
+ * 2. CPU vs. CPU - Zwei KI-Instanzen spielen gegeneinander
+ * 3. Spieler vs. Spieler (Netzwerk) - Zwei Spieler über Netzwerk verbunden
+ * 4. Letztes Spiel laden - Lädt den letzten gespeicherten Spielstand
+ * 
+ * Das Menü verwaltet die Spielfeld-Größen-Eingabe, Server-/Client-Verbindungen
+ * für Netzwerkspiele und die Initialisierung der jeweiligen Spielmodi.
+ * 
+ * @author Lisa Renner, Rodrigo Malisi Sousa
+ * @version 1.0
+ * @see GUI
+ * @see KI
+ * @see Netzwerkspiel
+ */
 public class Startmenu extends JFrame {
 
+    /**
+     * Konstruktor für das Startmenü.
+     * 
+     * Erstellt das Hauptmenü-Fenster mit vier Spielmodus-Buttons:
+     * - Spieler vs. CPU: Initialisiert ein Singleplayer-Spiel gegen eine KI-Instanz
+     * - CPU vs. CPU: Startet ein Bot-vs-Bot-Spiel mit zwei KI-Instanzen
+     * - Spieler vs. Spieler (Netzwerk): Ermöglicht Server/Client-Verbindung für Online-Spiele
+     * - Letztes Spiel laden: Lädt den zuletzt gespeicherten Spielstand
+     * 
+     * Jeder Button öffnet ein Input-Dialog zur Eingabe der Spielfeldgröße (5-30)
+     * und startet die entsprechende Spielmodus-Logik.
+     * 
+     * Das Fenster ist zentriert auf dem Bildschirm und hat eine 400x420 Pixel große Oberfläche.
+     */
     public Startmenu() {
         setTitle("Schiffe versenken - Hauptmen\u00fc");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -190,9 +222,21 @@ public class Startmenu extends JFrame {
         setLocationRelativeTo(null);
         setVisible(true);
     }
-    //Für die Abfrage der Spielfeldgröße, die der Spieler beim Start eines Spiels eingeben kann
+    /**
+     * Zeigt ein Input-Dialog zur Eingabe der Spielfeldgröße an.
+     * 
+     * Diese Methode fragt den Benutzer nach einer quadratischen Spielfeldgröße
+     * zwischen 5 und 30 Feldern. Bei ungültiger Eingabe wird das Dialog erneut angezeigt.
+     * 
+     * Validierungsregeln:
+     * - Eingabe muss eine ganze Zahl sein
+     * - Wert muss zwischen 5 und 30 liegen (einschließlich)
+     * - Leere oder abgebrochene Eingabe wird als -1 zurückgegeben
+     * 
+     * @return Die gewählte Spielfeldgröße (5-30), oder -1 bei Abbruch
+     */
     private int frageSpielfeldGroesse() {
-        String eingabe = JOptionPane.showInputDialog(this, "W\u00e4hle die quadratische Spielfeldgr\u00f6ße (5 bis 30):", "Spielfeldgr\u00f6ße", JOptionPane.QUESTION_MESSAGE);
+        String eingabe = JOptionPane.showInputDialog(this, "W\u00e4hle die quadratische Spielfeldgr\u00f6\u00dfe (5 bis 30):", "Spielfeldgr\u00f6\\u00dfe", JOptionPane.QUESTION_MESSAGE);
         if (eingabe == null || eingabe.isEmpty()) return -1;
         try {
             int g = Integer.parseInt(eingabe.trim());

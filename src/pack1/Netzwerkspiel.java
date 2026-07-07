@@ -7,17 +7,68 @@ import java.net.Socket;
 import java.util.ArrayList;
 import javax.swing.SwingUtilities;
 
+/**
+ * Verwaltet ein Netzwerk-basiertes Schiffe-versenken-Spiel.
+ * 
+ * Diese Klasse koordiniert die Kommunikation zwischen zwei Spielern über ein Netzwerk.
+ * Sie kann als Server oder Client fungieren und unterstützt sowohl Spieler-gegen-Spieler
+ * als auch KI-gegen-Spieler-Modi über Netzwerk.
+ * 
+ * Die Klasse verwaltet den Spielzustand, die Zugteilung, die Bereitschaftsstatus und
+ * delegiert Netzwerknachrichten an die GUI und die Spiellogik.
+ * 
+ * @author Lisa Renner, Rodrigo Malisi Sousa
+ * @version 1.0
+ * @see Netzwerkprotokoll
+ * @see GUI
+ * @see KI
+ */
 public class Netzwerkspiel {
     
+    /**
+     * Referenz zur Benutzeroberfläche des Spiels.
+     */
     private GUI gui; 
+    
+    /**
+     * Die KI-Instanz für KI-gesteuerte Züge.
+     */
     private final KI ki;   
+    
+    /**
+     * Handler für Netzwerk-Protokoll-Kommunikation.
+     */
     private Netzwerkprotokoll protokollHandler; 
     
+    /**
+     * Flag: true wenn dieser Spieler gerade am Zug ist.
+     */
     private boolean ichBinAmZug = false; 
+    
+    /**
+     * Flag: true wenn der KI-Modus gegen einen Netzwerk-Gegner aktiv ist.
+     */
     private boolean modusKiGegenGegner = false; 
+    
+    /**
+     * Flag: true wenn dieser Spieler bereit ist, das Spiel zu starten.
+     */
     private boolean ichBinBereit = false; 
+    
+    /**
+     * Flag: true wenn der Gegner bereit ist, das Spiel zu starten.
+     */
     private boolean gegnerIstBereit = false; 
 
+    /**
+     * Konstruktor für ein Netzwerkspiel.
+     * 
+     * Initialisiert das Netzwerkspiel mit einer GUI und einer KI-Instanz.
+     * Die GUI wird registriert, um Netzwerk-Spielvorgänge zu koordinieren.
+     * 
+     * @param gui Die Benutzeroberfläche des Spiels (kann null sein)
+     * @param ki Die KI-Instanz für KI-Züge
+     */
     public Netzwerkspiel(GUI gui, KI ki) {
         this.gui = gui;
         this.ki = ki;
@@ -26,6 +77,16 @@ public class Netzwerkspiel {
         }
     }
 
+    /**
+     * Startet die Netzwerk-Verbindung und initialisiert die Protokoll-Kommunikation.
+     * 
+     * Diese Methode wird in einem separaten Thread ausgeführt und verarbeitet
+     * alle eingehenden Nachrichten vom Gegner. Sie fungiert als Server oder Client,
+     * abhängig vom Parameter alsServer.
+     * 
+     * @param socket Die Netzwerk-Socket-Verbindung zum Gegner
+     * @param alsServer true wenn dieser Spieler als Server fungiert; false für Client
+     */
     public void starteNetzwerkVerbindung(Socket socket, boolean alsServer) {
         new Thread(() -> {
             try {
@@ -211,6 +272,15 @@ public class Netzwerkspiel {
         }).start();
     }
 
+    /**
+     * Verarbeitet einen Klick des Spielers auf das gegnerische Spielfeld.
+     * 
+     * Sendet den Schuss an den Gegner über das Netzwerk, falls der Spieler am Zug ist
+     * und nicht im KI-Modus spielt.
+     * 
+     * @param r Zeilenindex des geklickten Feldes (0-basiert)
+     * @param c Spaltenindex des geklickten Feldes (0-basiert)
+     */
     public void spielerKlicktSpielfeld(int r, int c) {
         if (ichBinAmZug && !modusKiGegenGegner && protokollHandler != null) {
             protokollHandler.sendeNachricht("shot", r + 1, c + 1); 
@@ -221,6 +291,12 @@ public class Netzwerkspiel {
         }
     }
 
+    /**
+     * Triggert einen KI-Zug und sendet ihn über das Netzwerk.
+     * 
+     * Diese Methode wird aufgerufen, wenn die KI an der Reihe ist, einen Schuss abzufeuern.
+     * Sie berechnet den nächsten Schuss basierend auf der KI-Logik und sendet ihn an den Gegner.
+     */
     private void triggerKiZug() {
         if (ki != null && protokollHandler != null) {
             KI.Koordinaten koordinaten = ki.getNextShot();
@@ -229,6 +305,14 @@ public class Netzwerkspiel {
         }
     }
 
+    /**
+     * Initiiert das Speichern des aktuellen Spielstands.
+     * 
+     * Sendet einen Speicherbefehl an den Gegner mit einer eindeutigen ID basierend
+     * auf dem aktuellen Zeitstempel.
+     * 
+     * @param gewaehlterDateipfad Der Dateipfad für den Speicherort (wird intern verarbeitet)
+     */
     public void initiiereSpeichern(String gewaehlterDateipfad) {
         long id = System.currentTimeMillis();
         if (protokollHandler != null) {
@@ -236,6 +320,12 @@ public class Netzwerkspiel {
         }
     }
 
+    /**
+     * Sendet ein Bereitschaftssignal an den Gegner.
+     * 
+     * Signalisiert, dass dieser Spieler bereit ist, das Spiel zu beginnen.
+     * Das Spiel startet, wenn beide Spieler bereit sind.
+     */
     public void sendeReadySignal() {
         this.ichBinBereit = true; 
         if (protokollHandler != null) {
@@ -243,10 +333,20 @@ public class Netzwerkspiel {
         }
     }
 
+    /**
+     * Prüft, ob dieser Spieler gerade am Zug ist.
+     * 
+     * @return true wenn dieser Spieler am Zug ist; false sonst
+     */
     public boolean istMeinZug() {
         return this.ichBinAmZug;
     }
 
+    /**
+     * Prüft, ob beide Spieler bereit sind, das Spiel zu beginnen.
+     * 
+     * @return true wenn beide Spieler bereit sind; false sonst
+     */
     public boolean sindBeideBereit() {
         return this.ichBinBereit && this.gegnerIstBereit;
     }
